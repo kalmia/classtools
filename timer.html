@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>타이머</title>
+<link rel="stylesheet" href="fonts/jua/400.css">
+<link rel="stylesheet" href="fonts/outfit/500.css">
+<link rel="stylesheet" href="fonts/outfit/700.css">
+<style>
+/* 작은 모드: 배경화면 '타이머' 칸 안에 숫자만 조용히. 전체화면: 큰 링/물높이/숫자 */
+:root{--c:#a65e2e;--ink:#2b211b;--mut:#8a5a34;--soft:rgba(166,94,46,.18)}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;overflow:hidden;background:transparent;font:16px/1.4 Jua,"Malgun Gothic",sans-serif;color:var(--ink);user-select:none;cursor:default}
+#root{position:relative;width:450px;height:244px;background:rgba(255,255,255,.02)}
+body.fs{background:#fff6e6}
+body.fs #root{width:100vw;height:100vh;background:transparent}
+body.adjust #root{outline:3px dashed var(--c);outline-offset:-3px;-webkit-app-region:drag;background:rgba(255,246,230,.55)}
+#stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.ring,.water{display:none}
+body.fs.v-ring .ring{display:block}body.fs.v-water .water{display:block}
+.ring{position:absolute;height:80vh;max-width:96vw;aspect-ratio:1;transform:translateY(-5vh)}
+.ring circle{fill:none;stroke-width:8}
+.ring .bg{stroke:var(--soft)}
+.ring .fg{stroke:var(--c);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .25s linear,stroke .6s}
+.water{position:absolute;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--c) 22%,transparent);transition:height .3s linear}
+.mid{position:relative;z-index:1;width:100%}
+.lbl{font:400 20px Jua,sans-serif;color:var(--mut);min-height:26px}
+.big{font:700 112px/1 Outfit,Jua,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--ink);transition:color .5s}
+.big.low{color:var(--c)}
+.big.pulse{animation:pl 1s ease-in-out infinite}
+@keyframes pl{50%{opacity:.55}}
+.track{width:84%;height:9px;border-radius:9px;background:var(--soft);margin:6px auto 0;overflow:hidden}
+.track i{display:block;height:100%;width:100%;background:var(--c);border-radius:9px;transition:width .25s linear,background .5s}
+.sub{font:400 17px Jua,sans-serif;color:var(--mut);margin-top:7px;min-height:24px}
+/* 전체화면 */
+body.fs .lbl{font-size:clamp(20px,3.4vh,34px);min-height:1.3em}
+body.fs .big{font-size:clamp(70px,min(24vw,36vh),380px)}
+body.fs.v-ring .big{font-size:clamp(60px,min(15vw,20vh),240px)}
+body.fs.v-ring .mid{transform:translateY(-5vh)}
+body.fs .track{display:none}
+body.fs.v-num .ring,body.fs.v-num .water{display:none}
+body.fs .sub{font-size:clamp(16px,2.6vh,26px);margin-top:1vh}
+/* 버튼 */
+#ctl{position:absolute;left:0;right:0;bottom:6px;display:flex;gap:5px;justify-content:center;flex-wrap:wrap;opacity:0;transition:opacity .2s;z-index:3;-webkit-app-region:no-drag}
+body.sm:hover #ctl,body.fs.act #ctl{opacity:1}
+body.sm:hover .sub{visibility:hidden}
+body.adjust #ctl{display:none}
+.b{height:30px;padding:0 10px;border:1px solid #e3cfb6;border-radius:10px;background:#fff;color:#5b3a24;font:400 14px Jua,sans-serif;cursor:pointer;white-space:nowrap}
+.b:hover{background:#fff1dc}
+.b.pri{background:var(--c);border-color:var(--c);color:#fff}
+.fo{display:none}
+body.fs #ctl{bottom:3vh;gap:10px}
+body.fs .b{height:46px;padding:0 18px;font-size:18px;border-radius:14px}
+body.fs .fo{display:inline-block}
+body.fs .so{display:none}
+body.fs.idle{cursor:none}
+/* 위치 맞추기 */
+#adj{display:none;position:absolute;inset:0;z-index:5;background:rgba(255,246,230,.97);flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:14px;font:400 15px/1.35 Jua,sans-serif;color:var(--ink)}
+body.adjust #adj{display:flex}
+#adj .b{-webkit-app-region:no-drag;height:34px;background:var(--c);color:#fff;border-color:var(--c)}
+#grip{position:absolute;right:0;bottom:0;width:30px;height:30px;cursor:nwse-resize;-webkit-app-region:no-drag;background:linear-gradient(135deg,transparent 52%,var(--c) 52% 60%,transparent 60% 72%,var(--c) 72% 80%,transparent 80%)}
+body.done .big{color:#e5484d}
+body.done.sm .big{animation:pl 1.2s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.big.pulse,body.done.sm .big{animation:none}}
+</style>
+</head>
+<body class="sm v-ring">
+<div id="root">
+  <div id="stage">
+    <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="fg" cx="100" cy="100" r="90" stroke-dasharray="565.49" stroke-dashoffset="0"/></svg>
+    <div class="water" id="water"></div>
+    <div class="mid">
+      <div class="lbl" id="lbl"></div>
+      <div class="big" id="big">05:00</div>
+      <div class="track so"><i id="bar"></i></div>
+      <div class="sub" id="sub"></div>
+    </div>
+  </div>
+  <div id="ctl">
+    <button class="b pri" data-a="toggle" id="bt">시작</button>
+    <button class="b fo" data-a="reset">처음으로</button>
+    <button class="b" data-a="-60">−1분</button>
+    <button class="b fo" data-a="-10">−10초</button>
+    <button class="b fo" data-a="10">+10초</button>
+    <button class="b" data-a="60">+1분</button>
+    <button class="b" data-a="full" id="bf">크게</button>
+    <button class="b" data-a="picker">뽑기</button>
+    <button class="b" data-a="settings">설정</button>
+  </div>
+  <div id="adj"><div>끌어서 칸에 맞추고,<br>오른쪽 아래 ◢를 끌어 크기를 맞춰요<br>(방향키로 1픽셀씩 이동)</div><button class="b" id="adone">완료</button><div id="grip"></div></div>
+</div>
+
+<script>
+{
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const B=document.body;
+const ALERT_NAMES={600:'10분',300:'5분',180:'3분',60:'1분',30:'30초',10:'10초'};
+let cfg={set:300,view:'ring',alerts:[300,60,10],snd:true,voice:true,endS:'bell',label:'',pre:[30,60,180,300,600,900]};
+let mode={full:false,adjust:false};
+let total=300000,remain=300000,running=false,endAt=0,done=false,doneAt=0,resAt=0,lastSec=null,sig='';
+
+/* ---- 소리 ---- */
+let ac;
+function A(){try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}return ac}
+function tone(f,d,type,v,when){try{const a=A(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+(when||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v||.2,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
+const chimeSmall=()=>{if(!cfg.snd)return;tone(880,.5,'sine',.18);tone(1320,.7,'sine',.12,.18)};
+const beep=()=>{if(cfg.snd)tone(1000,.12,'sine',.15)};
+function endSound(){if(!cfg.snd)return;
+  if(cfg.endS==='bell'){for(let r=0;r<3;r++){tone(1046,1.4,'sine',.22,r*1.1);tone(1568,1.2,'sine',.08,r*1.1);tone(523,1.6,'triangle',.1,r*1.1)}}
+  else if(cfg.endS==='chime'){[784,659,523,392].forEach((f,i)=>{tone(f,1,'sine',.2,i*.45);tone(f,1,'sine',.15,2+i*.45)})}
+  else{[523,659,784].forEach((f,i)=>tone(f,1.6,'sine',.12,i*.35))}}
+function speak(t){if(!cfg.voice)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+const sayLeft=s=>s>=60?`${s/60}분 남았습니다`:`${s}초 남았습니다`;
+
+/* ---- 표시 ---- */
+const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+':'+String(m).padStart(2,'0'):String(m).padStart(2,'0'))+':'+String(x).padStart(2,'0')};
+const kst=(d,sec)=>d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:sec?'2-digit':undefined});
+function fit(){document.body.style.zoom=B.classList.contains('sm')?Math.min(innerWidth/450,innerHeight/244):1}
+function color(){const s=remain/1000;return done||s<=10?'#e5484d':s<=60?'#f08c00':'#a65e2e'}
+function paint(){
+  B.classList.toggle('sm',!mode.full);B.classList.toggle('fs',mode.full);B.classList.toggle('adjust',mode.adjust);B.classList.toggle('done',done);
+  B.classList.remove('v-ring','v-water','v-num');B.classList.add('v-'+(cfg.view||'ring'));
+  document.documentElement.style.setProperty('--c',color());
+  const f=total>0?Math.max(0,Math.min(1,remain/total)):0;
+  $('#fg').style.strokeDashoffset=565.49*(1-f);$('#water').style.height=(f*100)+'%';$('#bar').style.width=(f*100)+'%';
+  const big=$('#big');
+  big.textContent=done?'끝!':fmt(remain);
+  big.className='big'+(remain<=60000||done?' low':'')+(running&&remain<=10000?' pulse':'');
+  $('#lbl').textContent=cfg.label||'';
+  let sub='';
+  if(done)sub='지난 시간 +'+fmt(Date.now()-doneAt);
+  else if(resAt)sub=`${kst(new Date(resAt))} 시작 예약 · ${fmt(resAt-Date.now())} 남음`;
+  else if(running)sub=`${kst(new Date(endAt))}에 끝나요`;
+  else if(remain<total)sub='잠시 멈춤';
+  $('#sub').textContent=sub;
+  $('#bt').textContent=running?'멈춤':done?'다시':remain<total?'계속':'시작';
+  $('#bf').textContent=mode.full?'작게':'크게';
+  fit();
+}
+function sendState(){
+  const s=[running,done,Math.ceil(remain/1000),resAt,cfg.set].join();
+  if(s===sig)return;sig=s;
+  api.state({running,done,remain,total,resAt,set:cfg.set});
+}
+
+/* ---- 동작 ---- */
+function start(){A();if(done||remain<=0){remain=total;done=false}running=true;endAt=Date.now()+remain;lastSec=Math.ceil(remain/1000);paint()}
+function pause(){if(!running)return;remain=Math.max(0,endAt-Date.now());running=false;paint()}
+function reset(){running=false;done=false;total=cfg.set*1000;remain=total;paint()}
+function setTime(sec,go){sec=Math.max(1,Math.min(10800,sec|0));cfg.set=sec;api.cfgSet({set:sec});reset();if(go)start()}
+function adj(d){
+  if(done){done=false;total=d>0?d*1000:total;remain=d>0?d*1000:0;if(d>0)start();return}
+  if(running)remain=endAt-Date.now();
+  remain=Math.max(1000,remain+d*1000);if(d>0)total+=d*1000;if(remain>total)total=remain;
+  if(running){endAt=Date.now()+remain;lastSec=Math.ceil(remain/1000)}
+  paint();
+}
+function finish(){running=false;done=true;doneAt=Date.now();remain=0;endSound();setTimeout(()=>speak('시간이 다 되었습니다'),cfg.snd?900:0);paint()}
+function loop(){
+  const now=Date.now();
+  if(resAt&&now>=resAt){resAt=0;speak('타이머를 시작합니다');chimeSmall();reset();start()}
+  if(running){
+    remain=endAt-now;const sec=Math.ceil(remain/1000);
+    if(lastSec!==null&&sec<lastSec){
+      for(const th of cfg.alerts){if(lastSec>th&&sec<=th&&total/1000>th){chimeSmall();setTimeout(()=>speak(sayLeft(th)),cfg.snd?500:0)}}
+      if(sec<=5&&sec>0)beep();
+    }
+    lastSec=sec;
+    if(remain<=0)finish();
+  }
+  paint();sendState();
+}
+
+/* ---- 명령 받기 ---- */
+api.on('cmd',({name,arg})=>{
+  A();
+  if(name==='start')start();else if(name==='pause')pause();else if(name==='toggle')running?pause():start();
+  else if(name==='reset')reset();else if(name==='set')setTime(arg.sec,arg.go);else if(name==='adj')adj(arg);
+  else if(name==='resIn'){resAt=Date.now()+Math.max(1,arg)*60000;reset()}
+  else if(name==='resAt'){const d=new Date();d.setHours(arg.h,arg.m,0,0);if(d<=new Date())d.setDate(d.getDate()+1);resAt=d.getTime();reset()}
+  else if(name==='resCancel'){resAt=0;paint()}
+  else if(name==='test'){endSound();setTimeout(()=>speak('1분 남았습니다'),cfg.snd?1200:0)}
+  sig='';
+});
+api.on('cfg',c=>{const keep=cfg.set;cfg=c;if(cfg.set!==keep&&!running&&!done&&remain===total){total=cfg.set*1000;remain=total}paint()});
+api.on('mode',m=>{mode=m;paint()});
+
+/* ---- 화면 조작 ---- */
+$('#ctl').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
+  if(a==='toggle')running?pause():start();else if(a==='reset')reset();
+  else if(a==='full')api.cmd('full',!mode.full);else if(a==='picker')api.open('picker');else if(a==='settings')api.open('settings');
+  else adj(+a)};
+$('#stage').ondblclick=()=>api.cmd('full',!mode.full);
+addEventListener('contextmenu',e=>{e.preventDefault();api.ctx()});
+$('#adone').onclick=()=>api.cmd('adjdone');
+let actT;
+addEventListener('mousemove',()=>{if(!mode.full)return;B.classList.add('act');B.classList.remove('idle');clearTimeout(actT);actT=setTimeout(()=>{B.classList.remove('act');B.classList.add('idle')},3000)});
+addEventListener('keydown',e=>{
+  if(mode.adjust){const k={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(k){api.adjNudge(k[0]*(e.shiftKey?10:1),k[1]*(e.shiftKey?10:1));e.preventDefault()}if(e.key==='Enter'||e.key==='Escape')api.cmd('adjdone');return}
+  if(e.code==='Space'){e.preventDefault();running?pause():start()}
+  else if(e.key==='ArrowUp')adj(60);else if(e.key==='ArrowDown')adj(-60);else if(e.key==='ArrowRight')adj(10);else if(e.key==='ArrowLeft')adj(-10);
+  else if(e.key==='f'||e.key==='F')api.cmd('full',!mode.full);
+  else if(e.key==='Escape'&&mode.full)api.cmd('full',false);
+});
+/* 크기 조절 손잡이 */
+const grip=$('#grip');let gs=null;
+grip.onpointerdown=e=>{grip.setPointerCapture(e.pointerId);gs={x:e.screenX,w:outerWidth}};
+grip.onpointermove=e=>{if(!gs)return;const w=Math.max(220,gs.w+(e.screenX-gs.x));api.adjSize(w,Math.round(w*244/450))};
+grip.onpointerup=()=>{gs=null};
+addEventListener('resize',fit);
+
+api.cfgGet().then(c=>{cfg=c;total=remain=cfg.set*1000;paint()});
+setInterval(loop,200);paint();
+}
+</script>
+</body>
+</html>

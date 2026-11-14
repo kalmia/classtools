@@ -94,6 +94,15 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
 .hist time{color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:14px;padding-top:2px}
 .hist span{font-size:18px}
 .empty{color:var(--mut);font-size:15px}
+/* 역할별 화면: stage=학생 TV 무대, control=선생님 조작 */
+.r-stage{background:#120408;overflow:hidden}
+.r-stage .wrap{max-width:none;padding:0}
+.r-stage header,.r-stage .bar,.r-stage .opts,.r-stage .grid,.r-stage #ctlStat,.r-stage #skip{display:none!important}
+.r-stage .stage{height:100vh;border-radius:0}
+.r-control .stage,.r-control #fs{display:none}
+#ctlStat{display:none;margin-bottom:6px}
+.r-control #ctlStat{display:block}
+#cs{font:400 clamp(30px,5vw,60px)/1.1 Jua,sans-serif;color:var(--red2)}
 @media(max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.stage.shake,.stage.live .beams i{animation:none}}
 </style>
@@ -121,6 +130,13 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
     <div class="cov" id="cov"><i class="l"></i><i class="r"></i><b>두구두구두구…</b></div>
     <canvas id="fx"></canvas>
     <button class="skip" id="skip" hidden>연출 건너뛰기 ▶▶</button>
+  </section>
+
+  <section class="card" id="ctlStat">
+    <h2>학생 화면(TV) 무대</h2>
+    <div id="cs">준비됨</div>
+    <div class="hint" id="cs2">뽑기 버튼을 누르면 학생 화면에서 연출이 시작돼요. 이 창은 선생님 화면에만 보여요.</div>
+    <div class="row" style="margin-top:8px"><button class="ib" id="skipC" hidden>연출 건너뛰기 ▶▶</button></div>
   </section>
 
   <div class="bar">
@@ -168,6 +184,9 @@ const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}
 const DAY=864e5;
 let st=Object.assign({mode:'num',n:25,names:'',ex:[],anim:'random',cnt:1,auto:true,snd:true,fake:false,spd:'normal'},LS.get('pk_state',{}));
 let hist=LS.get('pk_hist',[]).filter(h=>Date.now()-h.t<DAY);
+const ROLE=(location.search.match(/role=(\w+)/)||[])[1]||'both';
+document.body.classList.add('r-'+ROLE);
+let wd=0;
 let busy=false,timers=[],skipFn=null,raf=0,cfRaf=0,fakeUsed=false;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const lab=x=>st.mode==='num'?x+'번':x;
@@ -313,14 +332,26 @@ function cleanup(){
   $('#cov').className='cov';$('#stage').classList.remove('dim','shake');live(false);
   busy=false;skipFn=null;$('#go').disabled=false;$('#skip').hidden=true;
 }
+function say(a,b){if(ROLE==='control'){$('#cs').textContent=a;$('#cs2').textContent=b||''}else{setName(a,'many');$('#cap').textContent=b||''}}
 function draw(){
   if(busy)return;
   const p=pool();
-  if(!p.length){setName('뽑을 사람이 없어요','many');$('#cap').textContent='빠진 사람을 되돌려 주세요';return}
-  const k=Math.min(st.cnt,p.length),win=choose(p,k);A();fakeUsed=false;
+  if(!p.length){say('뽑을 사람이 없어요','빠진 사람을 되돌려 주세요');return}
+  const k=Math.min(st.cnt,p.length),win=choose(p,k);
+  let kind=st.anim;if(kind==='random')kind=['slot','spot','roulette','count','curtain'][rnd(5)];
+  if(ROLE==='control'){
+    busy=true;$('#go').disabled=true;$('#skipC').hidden=kind==='instant';
+    $('#cs').textContent='뽑는 중…';$('#cs2').textContent='학생 화면에서 연출이 진행되고 있어요.';
+    clearTimeout(wd);wd=setTimeout(()=>{busy=false;$('#go').disabled=false;$('#skipC').hidden=true},120000);
+    api.pk({type:'run',kind,rest:p,win,st:{mode:st.mode,snd:st.snd,fake:st.fake,spd:st.spd}});
+    return;
+  }
+  runLocal(p,win,kind);
+}
+function runLocal(p,win,kind){
+  A();fakeUsed=false;
   $('#got').innerHTML='';$('#cap').textContent='';
   cancelAnimationFrame(cfRaf);{const fx=$('#fx');fx.getContext('2d').clearRect(0,0,fx.width,fx.height)}
-  let kind=st.anim;if(kind==='random')kind=['slot','spot','roulette','count','curtain'][rnd(5)];
   if(kind==='instant')return finish(win,false);
   busy=true;$('#go').disabled=true;$('#skip').hidden=false;skipFn=()=>finish(win,false);
   next(p,win,0,kind);
@@ -338,6 +369,10 @@ function finish(win,shown){
     setName(win.map(lab).join(', '),'pop'+(win.length>1||big(win[0])?' many':''));$('#cap').textContent=win.length>1?`${win.length}명 당첨! 나와 주세요`:'나와 주세요!';
     if(!shown){fanfare();confetti();$('#got').innerHTML=''}
   }
+  if(ROLE==='stage'){api.pk({type:'finished',win});return}
+  record(win);
+}
+function record(win){
   hist.unshift({t:Date.now(),w:win.map(lab)});
   if(st.auto)st.ex=[...new Set([...st.ex,...win])];
   save();render();
@@ -377,11 +412,31 @@ $('#fs').onclick=toggleFs;
 document.addEventListener('keydown',e=>{
   if(/INPUT|TEXTAREA/.test(e.target.tagName))return;
   if(e.key==='f'||e.key==='F'){toggleFs();return}
-  if(e.code==='Space'||e.key==='Enter'){if(e.target.tagName==='BUTTON'&&e.key==='Enter')return;e.preventDefault();busy?(skipFn&&skipFn()):draw()}
-  if(e.key==='Escape'&&skipFn)skipFn();
+  const skipNow=()=>ROLE==='control'?api.pk({type:'skip'}):(skipFn&&skipFn());
+  if(e.code==='Space'||e.key==='Enter'){if(e.target.tagName==='BUTTON'&&e.key==='Enter')return;e.preventDefault();busy?skipNow():draw()}
+  if(e.key==='Escape'&&busy)skipNow();
 });
 $('#names').value=st.names;
-render();
+if(ROLE==='stage'){
+  setName('?');$('#cap').textContent='곧 뽑기를 시작해요';
+  api.on('pk',m=>{
+    if(m.type==='run'){
+      Object.assign(st,m.st);fakeUsed=false;$('#got').innerHTML='';$('#cap').textContent='';
+      cancelAnimationFrame(cfRaf);{const fx=$('#fx');fx.getContext('2d').clearRect(0,0,fx.width,fx.height)}
+      if(busy)cleanup();
+      if(m.kind==='instant')return finish(m.win,false);
+      busy=true;skipFn=()=>finish(m.win,false);next(m.rest,m.win,0,m.kind);
+    }else if(m.type==='skip'&&skipFn)skipFn();
+  });
+  api.pk({type:'ready'});
+}else render();
+if(ROLE==='control'){
+  $('#skipC').onclick=()=>api.pk({type:'skip'});
+  api.on('pk',m=>{if(m.type==='finished'){
+    clearTimeout(wd);busy=false;$('#go').disabled=false;$('#skipC').hidden=true;record(m.win);
+    $('#cs').textContent=m.win.map(lab).join(', ');$('#cs2').textContent='당첨! 나와 주세요';
+  }});
+}
 }
 </script>
 </body>

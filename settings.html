@@ -39,6 +39,15 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
   <h1>타이머 설정</h1>
 
   <section class="card">
+    <h2>지금 타이머 <span class="hint" id="tst"></span></h2>
+    <div class="row"><b id="tnow" style="font:400 40px/1 Jua,sans-serif;font-variant-numeric:tabular-nums">05:00</b></div>
+    <div class="row">
+      <button class="b pri" id="tg">시작</button><button class="b" id="tr">처음으로</button>
+      <button class="b" id="tm">−1분</button><button class="b" id="tp">+1분</button><button class="b" id="tfull">크게 보기</button>
+    </div>
+  </section>
+
+  <section class="card">
     <h2>시간 정하기</h2>
     <div class="row">
       <input type="number" id="mm" min="0" max="180" aria-label="분"> 분
@@ -70,6 +79,15 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
     <div class="row"><input type="time" id="rt" aria-label="시작 시각"> 에 <button class="b" id="resAt">예약</button></div>
     <div class="res" id="resBox" hidden><span id="resTxt"></span><button class="b" id="resCancel">예약 취소</button></div>
     <p class="hint">예약 시각이 되면 위에서 정한 시간으로 타이머가 저절로 시작돼요. 프로그램이 켜져 있어야 해요.</p>
+  </section>
+
+  <section class="card" id="monCard" hidden>
+    <h2>모니터</h2>
+    <div class="row">학생용(TV) 모니터
+      <select id="mon" aria-label="학생용 모니터"></select>
+      <button class="b" id="ident">모니터 번호 보기</button>
+    </div>
+    <p class="hint">타이머와 뽑기 무대는 학생용 모니터에만 나와요. 이 설정 창과 뽑기 조작 화면은 다른(선생님) 모니터에 떠요.</p>
   </section>
 
   <section class="card">
@@ -132,8 +150,26 @@ $('#adjust').onclick=()=>api.cmd('adjust');
 $('#resetPos').onclick=()=>api.cfgSet({win:null,resetWin:true});
 $('#quit').onclick=()=>api.cmd('quit');
 api.on('cfg',c=>{cfg=c;render()});
-api.on('state',s=>{$('#resBox').hidden=!s.resAt;if(s.resAt)$('#resTxt').textContent=`${kst(new Date(s.resAt))} 시작 예약됨 (${mmss(s.resAt-Date.now())} 뒤)`});
+api.on('state',s=>{tui(s);$('#resBox').hidden=!s.resAt;if(s.resAt)$('#resTxt').textContent=`${kst(new Date(s.resAt))} 시작 예약됨 (${mmss(s.resAt-Date.now())} 뒤)`});
 api.cfgGet().then(c=>{cfg=c;render()});
+/* 지금 타이머 조작 */
+let tfull=false;
+const fm=ms=>{const t=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),x=t%60;return(h?h+':'+String(m).padStart(2,'0'):String(m).padStart(2,'0'))+':'+String(x).padStart(2,'0')};
+function tui(s){$('#tnow').textContent=s.done?'끝!':fm(s.remain);$('#tg').textContent=s.running?'멈춤':s.done?'다시':s.remain<s.total?'계속':'시작';
+  $('#tst').textContent=s.done?'시간이 끝났어요':s.running?'진행 중':s.resAt?'시작 예약됨':'';
+  tfull=!!s.full;$('#tfull').textContent=tfull?'작게 보기':'크게 보기'}
+$('#tg').onclick=()=>api.cmd('toggle');$('#tr').onclick=()=>api.cmd('reset');
+$('#tm').onclick=()=>api.cmd('adj',-60);$('#tp').onclick=()=>api.cmd('adj',60);$('#tfull').onclick=()=>api.cmd('full',!tfull);
+api.on('mode',m=>{tfull=!!m.full;$('#tfull').textContent=tfull?'작게 보기':'크게 보기'});
+api.cmd('stateReq');
+/* 모니터 */
+function mons(){if(!api.displays)return;api.displays().then(d=>{if(!d||!d.list||d.list.length<2){$('#monCard').hidden=true;return}
+  $('#monCard').hidden=false;
+  $('#mon').innerHTML=`<option value="auto">자동 (보조 모니터)</option>`+d.list.map(x=>`<option value="${x.id}">모니터 ${x.n} (${x.w}×${x.h}${x.primary?', 주 모니터':''})</option>`).join('');
+  $('#mon').value=d.auto?'auto':String(d.student)})}
+$('#mon').onchange=e=>{api.cfgSet({studentDisplay:e.target.value==='auto'?null:+e.target.value}).then(mons)};
+$('#ident').onclick=()=>api.identify&&api.identify();
+mons();
 function ver(){api.ver().then(v=>{$('#ver').textContent=`화면 v${v.web} · 프로그램 ${v.app}`;$('#rl').hidden=!v.pending;if(v.pending)$('#verHint').textContent=`새 버전(v${v.pending})을 받았어요. 다시 시작하면 적용돼요.`})}
 $('#chk').onclick=()=>api.cmd('checkUpdate');$('#rl').onclick=()=>api.cmd('relaunch');
 api.on('update',()=>ver());ver();

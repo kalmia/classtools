@@ -73,11 +73,11 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
     </div>
     <div class="row">
       <select id="preS" aria-label="미리 알림 소리"><option value="ding">미리 알림: 딩동</option><option value="pop">미리 알림: 뽕</option><option value="knock">미리 알림: 똑똑</option><option value="tri">미리 알림: 삐삐삐</option></select>
-      <button class="b" id="testPre">들어 보기</button>
+      <select id="preRep" aria-label="미리 알림 반복"><option value="1">1번 반복</option><option value="2">2번 반복</option><option value="3">3번 반복</option><option value="4">4번 반복</option><option value="5">5번 반복</option></select> <button class="b" id="testPre">들어 보기</button>
     </div>
     <div class="row">
       <select id="endS" aria-label="끝 소리"><option value="bell">끝 소리: 종소리</option><option value="chime">끝 소리: 차임</option><option value="soft">끝 소리: 부드럽게</option></select>
-      <button class="b" id="testEnd">들어 보기</button>
+      <select id="endRep" aria-label="끝 소리 반복"><option value="1">1번 반복</option><option value="2">2번 반복</option><option value="3">3번 반복</option><option value="4">4번 반복</option><option value="5">5번 반복</option></select> <button class="b" id="testEnd">들어 보기</button>
     </div>
   </section>
 
@@ -125,7 +125,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
 {
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ALERTS=[[600,'10분 전'],[300,'5분 전'],[180,'3분 전'],[60,'1분 전'],[30,'30초 전'],[10,'10초 전']];
-let cfg={set:300,view:'ring',alerts:[],snd:true,vol:70,preS:'ding',endS:'bell',label:'',pre:[],onTop:true,autostart:false};
+let cfg={set:300,view:'ring',alerts:[],snd:true,vol:70,preS:'ding',preRep:3,endS:'bell',endRep:2,label:'',pre:[],onTop:true,autostart:false};
 const kst=d=>d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+'분 '+s%60+'초'};
 const preLab=s=>s<60?s+'초':(s%60?Math.floor(s/60)+'분 '+s%60+'초':s/60+'분');
@@ -135,7 +135,7 @@ function render(){
   if(document.activeElement!==$('#label'))$('#label').value=cfg.label||'';
   $('#pre').innerHTML=cfg.pre.map((s,i)=>`<button class="b" data-s="${s}">${preLab(s)}<span class="x" data-del="${i}" role="button" aria-label="지우기">×</span></button>`).join('');
   $('#alerts').innerHTML=ALERTS.map(([s,l])=>`<label><input type="checkbox" value="${s}"${cfg.alerts.includes(s)?' checked':''}> ${l}</label>`).join('');
-  $('#snd').checked=cfg.snd;$('#preS').value=cfg.preS||'ding';if(document.activeElement!==$('#vol'))$('#vol').value=cfg.vol==null?70:cfg.vol;$('#volv').textContent=($('#vol').value)+'%';$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
+  $('#snd').checked=cfg.snd;$('#preS').value=cfg.preS||'ding';$('#preRep').value=cfg.preRep==null?3:cfg.preRep;$('#endRep').value=cfg.endRep==null?2:cfg.endRep;if(document.activeElement!==$('#vol'))$('#vol').value=cfg.vol==null?70:cfg.vol;$('#volv').textContent=($('#vol').value)+'%';$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
   $$('#view button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===cfg.view));
 }
 $('#set').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:true})};
@@ -146,6 +146,8 @@ $('#addPre').onclick=()=>{const s=cur();if(s>0&&!cfg.pre.includes(s))api.cfgSet(
 $('#alerts').onchange=()=>api.cfgSet({alerts:$$('#alerts input:checked').map(i=>+i.value)});
 $('#snd').onchange=e=>api.cfgSet({snd:e.target.checked});
 $('#preS').onchange=e=>{api.cfgSet({preS:e.target.value}).then?0:0;setTimeout(()=>api.cmd('test','pre'),150)};
+$('#preRep').onchange=e=>{api.cfgSet({preRep:+e.target.value});setTimeout(()=>api.cmd('test','pre'),150)};
+$('#endRep').onchange=e=>{api.cfgSet({endRep:+e.target.value});setTimeout(()=>api.cmd('test','end'),150)};
 $('#vol').oninput=e=>{$('#volv').textContent=e.target.value+'%';api.cfgSet({vol:+e.target.value})};
 $('#vol').onchange=()=>api.cmd('test','pre');
 $('#endS').onchange=e=>{api.cfgSet({endS:e.target.value});setTimeout(()=>api.cmd('test','end'),150)};

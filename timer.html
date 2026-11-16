@@ -24,7 +24,7 @@ body.fs.v-ring .ring{display:block}body.fs.v-water .water{display:block}
 .ring .fg{stroke:var(--c);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .25s linear,stroke .6s}
 .water{position:absolute;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--c) 22%,transparent);transition:height .3s linear}
 .mid{position:relative;z-index:1;width:100%}
-.lbl{font:400 20px Jua,sans-serif;color:var(--mut);min-height:26px}
+.lbl{font:400 30px/1.15 Jua,sans-serif;color:var(--ink);min-height:34px;max-width:94%;margin:0 auto 2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .big{font:700 112px/1 Outfit,Jua,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--ink);transition:color .5s}
 .big.low{color:var(--c)}
 .big.pulse{animation:pl 1s ease-in-out infinite}
@@ -33,7 +33,7 @@ body.fs.v-ring .ring{display:block}body.fs.v-water .water{display:block}
 .track i{display:block;height:100%;width:100%;background:var(--c);border-radius:9px;transition:width .25s linear,background .5s}
 .sub{font:400 17px Jua,sans-serif;color:var(--mut);margin-top:7px;min-height:24px}
 /* 전체화면 */
-body.fs .lbl{font-size:clamp(20px,3.4vh,34px);min-height:1.3em}
+body.fs .lbl{font-size:clamp(32px,6.5vh,72px);min-height:1.3em;white-space:normal}
 body.fs .big{font-size:clamp(70px,min(24vw,36vh),380px)}
 body.fs.v-ring .big{font-size:clamp(60px,min(15vw,20vh),240px)}
 body.fs.v-ring .mid{transform:translateY(-5vh)}
@@ -95,22 +95,25 @@ body.done.sm .big{animation:pl 1.2s ease-in-out infinite}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const B=document.body;
 const ALERT_NAMES={600:'10분',300:'5분',180:'3분',60:'1분',30:'30초',10:'10초'};
-let cfg={set:300,view:'ring',alerts:[300,60,10],snd:true,voice:true,endS:'bell',label:'',pre:[30,60,180,300,600,900]};
+let cfg={set:300,view:'ring',alerts:[300,60,10],snd:true,vol:70,preS:'ding',endS:'bell',label:'',pre:[30,60,180,300,600,900]};
 let mode={full:false,adjust:false};
 let total=300000,remain=300000,running=false,endAt=0,done=false,doneAt=0,resAt=0,lastSec=null,sig='';
 
 /* ---- 소리 ---- */
-let ac;
-function A(){try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}return ac}
-function tone(f,d,type,v,when){try{const a=A(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+(when||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v||.2,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
-const chimeSmall=()=>{if(!cfg.snd)return;tone(880,.5,'sine',.18);tone(1320,.7,'sine',.12,.18)};
-const beep=()=>{if(cfg.snd)tone(1000,.12,'sine',.15)};
+let ac,mg;
+function A(){try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();mg=ac.createGain();mg.connect(ac.destination)}if(ac.state!=='running')ac.resume()}catch(e){}if(mg)mg.gain.value=Math.pow(Math.max(0,Math.min(100,cfg.vol==null?70:cfg.vol))/100,1.6)*1.6;return ac}
+function tone(f,d,type,v,when){try{const a=A(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+(when||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v||.2,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(mg);o.start(t);o.stop(t+d+.05)}catch(e){}}
+/* 미리 알림 소리 (끝 소리와 다르게: 짧고 가벼운 소리) */
+function preSound(){if(!cfg.snd)return;const s=cfg.preS||'ding';
+  if(s==='ding'){tone(880,.6,'sine',.4);tone(1320,.8,'sine',.25,.2)}
+  else if(s==='pop'){tone(660,.18,'triangle',.45);tone(990,.25,'triangle',.4,.16)}
+  else if(s==='knock'){tone(220,.18,'square',.25);tone(220,.18,'square',.25,.25)}
+  else{[0,.25,.5].forEach(w=>tone(1200,.15,'sine',.4,w))}}
+const beep=()=>{if(cfg.snd)tone(1000,.12,'sine',.25)};
 function endSound(){if(!cfg.snd)return;
-  if(cfg.endS==='bell'){for(let r=0;r<3;r++){tone(1046,1.4,'sine',.22,r*1.1);tone(1568,1.2,'sine',.08,r*1.1);tone(523,1.6,'triangle',.1,r*1.1)}}
-  else if(cfg.endS==='chime'){[784,659,523,392].forEach((f,i)=>{tone(f,1,'sine',.2,i*.45);tone(f,1,'sine',.15,2+i*.45)})}
-  else{[523,659,784].forEach((f,i)=>tone(f,1.6,'sine',.12,i*.35))}}
-function speak(t){if(!cfg.voice)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
-const sayLeft=s=>s>=60?`${s/60}분 남았습니다`:`${s}초 남았습니다`;
+  if(cfg.endS==='bell'){for(let r=0;r<3;r++){tone(1046,1.4,'sine',.4,r*1.1);tone(1568,1.2,'sine',.15,r*1.1);tone(523,1.6,'triangle',.2,r*1.1)}}
+  else if(cfg.endS==='chime'){[784,659,523,392].forEach((f,i)=>{tone(f,1,'sine',.4,i*.45);tone(f,1,'sine',.3,2+i*.45)})}
+  else{[523,659,784].forEach((f,i)=>tone(f,1.6,'sine',.25,i*.35))}}
 
 /* ---- 표시 ---- */
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+':'+String(m).padStart(2,'0'):String(m).padStart(2,'0'))+':'+String(x).padStart(2,'0')};
@@ -155,14 +158,14 @@ function adj(d){
   if(running){endAt=Date.now()+remain;lastSec=Math.ceil(remain/1000)}
   paint();
 }
-function finish(){running=false;done=true;doneAt=Date.now();remain=0;endSound();setTimeout(()=>speak('시간이 다 되었습니다'),cfg.snd?900:0);paint()}
+function finish(){running=false;done=true;doneAt=Date.now();remain=0;endSound();paint()}
 function loop(){
   const now=Date.now();
-  if(resAt&&now>=resAt){resAt=0;speak('타이머를 시작합니다');chimeSmall();reset();start()}
+  if(resAt&&now>=resAt){resAt=0;preSound();reset();start()}
   if(running){
     remain=endAt-now;const sec=Math.ceil(remain/1000);
     if(lastSec!==null&&sec<lastSec){
-      for(const th of cfg.alerts){if(lastSec>th&&sec<=th&&total/1000>th){chimeSmall();setTimeout(()=>speak(sayLeft(th)),cfg.snd?500:0)}}
+      for(const th of cfg.alerts){if(lastSec>th&&sec<=th&&total/1000>=th&&!(th*1000===total&&lastSec*1000>=total)){preSound()}}
       if(sec<=5&&sec>0)beep();
     }
     lastSec=sec;
@@ -179,10 +182,10 @@ api.on('cmd',({name,arg})=>{
   else if(name==='resIn'){resAt=Date.now()+Math.max(1,arg)*60000;reset()}
   else if(name==='resAt'){const d=new Date();d.setHours(arg.h,arg.m,0,0);if(d<=new Date())d.setDate(d.getDate()+1);resAt=d.getTime();reset()}
   else if(name==='resCancel'){resAt=0;paint()}
-  else if(name==='test'){endSound();setTimeout(()=>speak('1분 남았습니다'),cfg.snd?1200:0)}
+  else if(name==='test'){arg==='pre'?preSound():endSound()}
   sig='';
 });
-api.on('cfg',c=>{const keep=cfg.set;cfg=c;if(cfg.set!==keep&&!running&&!done&&remain===total){total=cfg.set*1000;remain=total}paint()});
+api.on('cfg',c=>{const keep=cfg.set;cfg=c;A();if(cfg.set!==keep&&!running&&!done&&remain===total){total=cfg.set*1000;remain=total}paint()});
 api.on('mode',m=>{mode=m;paint()});
 
 /* ---- 화면 조작 ---- */

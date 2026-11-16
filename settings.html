@@ -55,7 +55,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
       <button class="b pri" id="set">이 시간으로 시작</button>
       <button class="b" id="setOnly">시간만 맞추기</button>
     </div>
-    <div class="row"><input type="text" id="label" placeholder="활동 이름 (예: 모둠 토의) — 타이머 위에 표시돼요" maxlength="30"></div>
+    <div class="row"><input type="text" id="label" placeholder="활동 이름 (예: 모둠 토의) — 타이머 위에 크게 표시돼요" maxlength="30"></div>
     <h2 style="margin-top:6px">바로 시작 목록</h2>
     <div class="pre" id="pre"></div>
     <div class="row" style="margin-top:10px"><button class="b" id="addPre">위에서 정한 시간을 목록에 추가</button></div>
@@ -66,10 +66,18 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
     <h2>미리 알림</h2>
     <div class="chk" id="alerts"></div>
     <div class="row" style="margin-top:6px">
-      <label class="tg"><input type="checkbox" id="snd"> 알림 소리</label>
-      <label class="tg"><input type="checkbox" id="voice"> 음성 안내</label>
+      <label class="tg"><input type="checkbox" id="snd"> 알림 소리 켜기</label>
+    </div>
+    <div class="row">
+      <span>볼륨</span><input type="range" id="vol" min="0" max="100" step="5" style="flex:1;min-width:140px" aria-label="볼륨"><b id="volv" style="min-width:42px">70%</b>
+    </div>
+    <div class="row">
+      <select id="preS" aria-label="미리 알림 소리"><option value="ding">미리 알림: 딩동</option><option value="pop">미리 알림: 뽕</option><option value="knock">미리 알림: 똑똑</option><option value="tri">미리 알림: 삐삐삐</option></select>
+      <button class="b" id="testPre">들어 보기</button>
+    </div>
+    <div class="row">
       <select id="endS" aria-label="끝 소리"><option value="bell">끝 소리: 종소리</option><option value="chime">끝 소리: 차임</option><option value="soft">끝 소리: 부드럽게</option></select>
-      <button class="b" id="test">소리 듣기</button>
+      <button class="b" id="testEnd">들어 보기</button>
     </div>
   </section>
 
@@ -117,7 +125,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
 {
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ALERTS=[[600,'10분 전'],[300,'5분 전'],[180,'3분 전'],[60,'1분 전'],[30,'30초 전'],[10,'10초 전']];
-let cfg={set:300,view:'ring',alerts:[],snd:true,voice:true,endS:'bell',label:'',pre:[],onTop:true,autostart:false};
+let cfg={set:300,view:'ring',alerts:[],snd:true,vol:70,preS:'ding',endS:'bell',label:'',pre:[],onTop:true,autostart:false};
 const kst=d=>d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+'분 '+s%60+'초'};
 const preLab=s=>s<60?s+'초':(s%60?Math.floor(s/60)+'분 '+s%60+'초':s/60+'분');
@@ -127,7 +135,7 @@ function render(){
   if(document.activeElement!==$('#label'))$('#label').value=cfg.label||'';
   $('#pre').innerHTML=cfg.pre.map((s,i)=>`<button class="b" data-s="${s}">${preLab(s)}<span class="x" data-del="${i}" role="button" aria-label="지우기">×</span></button>`).join('');
   $('#alerts').innerHTML=ALERTS.map(([s,l])=>`<label><input type="checkbox" value="${s}"${cfg.alerts.includes(s)?' checked':''}> ${l}</label>`).join('');
-  $('#snd').checked=cfg.snd;$('#voice').checked=cfg.voice;$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
+  $('#snd').checked=cfg.snd;$('#preS').value=cfg.preS||'ding';if(document.activeElement!==$('#vol'))$('#vol').value=cfg.vol==null?70:cfg.vol;$('#volv').textContent=($('#vol').value)+'%';$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
   $$('#view button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===cfg.view));
 }
 $('#set').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:true})};
@@ -137,9 +145,11 @@ $('#pre').onclick=e=>{const d=e.target.dataset.del;if(d!==undefined){e.stopPropa
 $('#addPre').onclick=()=>{const s=cur();if(s>0&&!cfg.pre.includes(s))api.cfgSet({pre:[...cfg.pre,s].sort((a,b)=>a-b)})};
 $('#alerts').onchange=()=>api.cfgSet({alerts:$$('#alerts input:checked').map(i=>+i.value)});
 $('#snd').onchange=e=>api.cfgSet({snd:e.target.checked});
-$('#voice').onchange=e=>api.cfgSet({voice:e.target.checked});
-$('#endS').onchange=e=>api.cfgSet({endS:e.target.value});
-$('#test').onclick=()=>api.cmd('test');
+$('#preS').onchange=e=>{api.cfgSet({preS:e.target.value}).then?0:0;setTimeout(()=>api.cmd('test','pre'),150)};
+$('#vol').oninput=e=>{$('#volv').textContent=e.target.value+'%';api.cfgSet({vol:+e.target.value})};
+$('#vol').onchange=()=>api.cmd('test','pre');
+$('#endS').onchange=e=>{api.cfgSet({endS:e.target.value});setTimeout(()=>api.cmd('test','end'),150)};
+$('#testPre').onclick=()=>api.cmd('test','pre');$('#testEnd').onclick=()=>api.cmd('test','end');
 $('#resIn').onclick=()=>api.cmd('resIn',Math.max(1,+$('#rm').value||1));
 $('#resAt').onclick=()=>{const v=$('#rt').value;if(!v)return;const [h,m]=v.split(':').map(Number);api.cmd('resAt',{h,m})};
 $('#resCancel').onclick=()=>api.cmd('resCancel');

@@ -137,7 +137,7 @@ function paint(){
   big.className='big'+(remain<=60000||done?' low':'')+(running&&remain<=10000?' pulse':'');
   $('#lbl').textContent=cfg.label||'';
   let sub='';
-  if(done)sub='지난 시간 +'+fmt(Date.now()-doneAt);
+  if(done)sub='';
   else if(resAt)sub=`${kst(new Date(resAt))} 시작 예약 · ${fmt(resAt-Date.now())} 남음`;
   else if(running)sub=`${kst(new Date(endAt))}에 끝나요`;
   else if(remain<total)sub='잠시 멈춤';
@@ -182,7 +182,12 @@ function routineTick(){
     api.cfgSet({label:r.label,labelSel:r.label});paint();break;
   }
 }
-function loop(){routineTick();
+function endAuto(){ // 끝난 화면이 계속 남지 않도록, 정한 시간이 지나면 처음 화면으로
+  const h=cfg.endHold==null?60:cfg.endHold;
+  if(!done||!h||Date.now()-doneAt<h*1000)return;
+  clearSnd();reset();api.cfgSet({label:'',labelSel:''});if(mode.full)api.cmd('full',false);
+}
+function loop(){endAuto();routineTick();
   const now=Date.now();
   if(resAt&&now>=resAt){resAt=0;preSound();reset();start()}
   if(running){

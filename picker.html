@@ -103,6 +103,16 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
 #ctlStat{display:none;margin-bottom:6px}
 .r-control #ctlStat{display:block}
 #cs{font:400 clamp(30px,5vw,60px)/1.1 Jua,sans-serif;color:var(--red2)}
+/* 선생님 조작 화면: 왼쪽에 조작, 오른쪽에 기록을 나란히 */
+@media(min-width:1000px){
+.r-control>.wrap{max-width:1500px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);column-gap:16px;align-content:start}
+.r-control header{grid-column:1/-1}
+.r-control #ctlStat,.r-control .bar,.r-control .opts{grid-column:1}
+.r-control .grid{display:contents}
+.r-control .grid>.card:first-child{grid-column:1}
+.r-control .grid>.card:last-child{grid-column:2;grid-row:2/span 4}
+.r-control .hist{max-height:none}
+}
 @media(max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.stage.shake,.stage.live .beams i{animation:none}}
 </style>

@@ -8,9 +8,14 @@
 :root{--bg:#fbf6ee;--ink:#2b211b;--card:#fff;--line:#e9dcc8;--mut:#8a6f58;--c:#a65e2e;--soft:#f6ead8}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Jua,"Malgun Gothic",sans-serif}
-.wrap{padding:16px 18px 30px;max-width:640px;margin:0 auto}
+.wrap{padding:16px 22px 30px;max-width:1240px;margin:0 auto}
+.cols{column-count:2;column-gap:16px}
+.cols>.card{break-inside:avoid}
+@media(max-width:900px){.cols{column-count:1}}
 h1{font:400 26px Jua,sans-serif;margin:0 0 12px}
-h2{font:400 19px Jua,sans-serif;margin:0 0 10px}
+h2{font:400 23px Jua,sans-serif;margin:-16px -16px 14px;padding:11px 16px;background:var(--soft);color:var(--c);border-bottom:2px solid var(--line);border-radius:16px 16px 0 0}
+h3{font:400 17px Jua,sans-serif;margin:10px 0 8px;color:var(--ink)}
+.card{overflow:hidden}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 button,input,select{font:inherit}
@@ -39,8 +44,9 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
 <div class="wrap">
   <h1>타이머 설정</h1>
 
+  <div class="cols">
   <section class="card">
-    <h2>지금 타이머 <span class="hint" id="tst"></span></h2>
+    <h2>⏱ 지금 타이머 <span class="hint" id="tst"></span></h2>
     <div class="row"><b id="tnow" style="font:400 40px/1 Jua,sans-serif;font-variant-numeric:tabular-nums">05:00</b></div>
     <div class="row">
       <button class="b pri" id="tg">시작</button><button class="b" id="tr">처음으로</button>
@@ -49,23 +55,23 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
   </section>
 
   <section class="card">
-    <h2>시간 정하기</h2>
+    <h2>🕒 시간 정하기 · 활동 이름</h2>
     <div class="row">
       <input type="number" id="mm" min="0" max="180" aria-label="분"> 분
       <input type="number" id="ss" min="0" max="59" aria-label="초"> 초
       <button class="b pri" id="set">이 시간으로 시작</button>
       <button class="b" id="setOnly">시간만 맞추기</button>
     </div>
-    <div class="row"><select id="labSel" aria-label="활동 이름"><option value="">활동 이름: 없음</option><option>아침 시간</option><option>쉬는 시간</option><option>점심 시간</option><option value="직접">직접 입력</option></select></div>
+    <div class="row"><select id="labSel" aria-label="활동 이름"><option value="">활동 이름: 없음</option><option>아침 시간</option><option>쉬는 시간</option><option>점심 시간</option><option>하교 시간</option><option value="직접">직접 입력</option></select></div>
     <div class="row" id="labRow" hidden><input type="text" id="label" placeholder="활동 이름 (예: 모둠 토의) — 타이머 위에 크게 표시돼요" maxlength="30"></div>
-    <h2 style="margin-top:6px">바로 시작 목록</h2>
+    <h3>바로 시작 목록</h3>
     <div class="pre" id="pre"></div>
     <div class="row" style="margin-top:10px"><button class="b" id="addPre">위에서 정한 시간을 목록에 추가</button></div>
     <p class="hint">타이머를 마우스 오른쪽 버튼으로 눌러도 이 목록이 나와요.</p>
   </section>
 
   <section class="card">
-    <h2>미리 알림</h2>
+    <h2>🔔 미리 알림 · 소리</h2>
     <div class="chk" id="alerts"></div>
     <div class="row" style="margin-top:6px">
       <label class="tg"><input type="checkbox" id="snd"> 알림 소리 켜기</label>
@@ -84,13 +90,13 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
   </section>
 
   <section class="card">
-    <h2>루틴 (자동으로 켜져요)</h2>
+    <h2>🔁 루틴 (자동으로 켜져요)</h2>
     <div id="rtBox"></div>
     <p class="hint">정해 둔 시각 사이에 프로그램이 켜져 있으면 타이머가 저절로 시작하고, 끝나는 시각에 맞춰 끝나요. 하루에 한 번만 시작해요. 이미 직접 타이머를 돌리고 있으면 끝난 뒤에 시작해요.</p>
   </section>
 
   <section class="card">
-    <h2>예약 시작</h2>
+    <h2>📅 예약 시작</h2>
     <div class="row"><input type="number" id="rm" min="1" max="180" value="5" aria-label="몇 분 뒤"> 분 뒤에 <button class="b" id="resIn">예약</button></div>
     <div class="row"><input type="time" id="rt" aria-label="시작 시각"> 에 <button class="b" id="resAt">예약</button></div>
     <div class="res" id="resBox" hidden><span id="resTxt"></span><button class="b" id="resCancel">예약 취소</button></div>
@@ -98,19 +104,24 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
   </section>
 
   <section class="card" id="monCard" hidden>
-    <h2>모니터</h2>
+    <h2>🖥 모니터 (학생용 TV)</h2>
     <div class="row">학생용(TV) 모니터
       <select id="mon" aria-label="학생용 모니터"></select>
       <button class="b" id="ident">모니터 번호 보기</button>
+    </div>
+    <div class="row">뽑기 화면(학생용) 높이
+      <select id="stageH" aria-label="뽑기 화면 높이"><option value="60">작게</option><option value="70">조금 작게</option><option value="78">보통</option><option value="92">크게</option></select>
     </div>
     <p class="hint">타이머와 뽑기 무대는 학생용 모니터에만 나와요. 이 설정 창과 뽑기 조작 화면은 다른(선생님) 모니터에 떠요.</p>
   </section>
 
   <section class="card">
-    <h2>화면과 창</h2>
+    <h2>🪟 화면과 창</h2>
     <div class="row">크게 볼 때 모양
       <div class="seg" id="view" role="group" aria-label="전체화면 모양"><button data-v="ring">링</button><button data-v="water">물높이</button><button data-v="num">숫자만</button></div>
     </div>
+    <div class="row">타이머가 끝나면
+      <select id="endHold" aria-label="끝난 화면 정리"><option value="30">30초 뒤</option><option value="60">1분 뒤</option><option value="180">3분 뒤</option><option value="600">10분 뒤</option><option value="0">그대로 두기</option></select> 처음 화면으로 돌아가요</div>
     <div class="row">
       <label class="tg"><input type="checkbox" id="onTop"> 다른 창 위에 항상 표시</label>
       <label class="tg"><input type="checkbox" id="autostart"> 컴퓨터를 켜면 자동 실행</label>
@@ -123,10 +134,11 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
   </section>
 
   <section class="card">
-    <h2>버전</h2>
+    <h2>ℹ 버전</h2>
     <div class="row"><span id="ver">확인 중…</span><button class="b" id="chk">업데이트 확인</button><button class="b pri" id="rl" hidden>지금 다시 시작해서 적용</button></div>
     <p class="hint" id="verHint">프로그램을 켜면 자동으로 새 화면이 있는지 확인하고, 있으면 받아 둬요. 다시 시작하면 적용돼요.</p>
   </section>
+  </div>
 </div>
 
 <script>
@@ -134,7 +146,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ALERTS=[[600,'10분 전'],[300,'5분 전'],[180,'3분 전'],[60,'1분 전'],[30,'30초 전'],[10,'10초 전']];
 const RT_DEF=[{id:'am',on:true,label:'아침 시간',days:[1,2,3,4,5],from:'',until:'08:55'},{id:'lunch',on:true,label:'점심 시간',days:[1,2,3,4,5],from:'12:10',until:'13:00'}];
-const LABS=['아침 시간','쉬는 시간','점심 시간'];
+const LABS=['아침 시간','쉬는 시간','점심 시간','하교 시간'];
 let cfg={set:300,view:'ring',alerts:[],snd:true,vol:70,preS:'ding',preRep:3,endS:'bell',endRep:2,label:'',pre:[],onTop:true,autostart:false};
 const kst=d=>d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+'분 '+s%60+'초'};
@@ -145,7 +157,7 @@ function render(){
   const ls=cfg.labelSel!=null?cfg.labelSel:(LABS.includes(cfg.label)?cfg.label:(cfg.label?'직접':''));
   $('#labSel').value=ls;$('#labRow').hidden=ls!=='직접';
   if(document.activeElement!==$('#label'))$('#label').value=ls==='직접'?(cfg.label||''):'';
-  renderRt();
+  renderRt();$('#stageH').value=String(cfg.stageH||78);$('#endHold').value=String(cfg.endHold==null?60:cfg.endHold);
   $('#pre').innerHTML=cfg.pre.map((s,i)=>`<button class="b" data-s="${s}">${preLab(s)}<span class="x" data-del="${i}" role="button" aria-label="지우기">×</span></button>`).join('');
   $('#alerts').innerHTML=ALERTS.map(([s,l])=>`<label><input type="checkbox" value="${s}"${cfg.alerts.includes(s)?' checked':''}> ${l}</label>`).join('');
   $('#snd').checked=cfg.snd;$('#preS').value=cfg.preS||'ding';$('#preRep').value=cfg.preRep==null?3:cfg.preRep;$('#endRep').value=cfg.endRep==null?2:cfg.endRep;if(document.activeElement!==$('#vol'))$('#vol').value=cfg.vol==null?70:cfg.vol;$('#volv').textContent=($('#vol').value)+'%';$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
@@ -154,6 +166,8 @@ function render(){
 $('#set').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:true})};
 $('#setOnly').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:false})};
 $('#label').oninput=e=>api.cfgSet({label:e.target.value,labelSel:'직접'});
+$('#stageH').onchange=e=>api.cfgSet({stageH:+e.target.value});
+$('#endHold').onchange=e=>api.cfgSet({endHold:+e.target.value});
 $('#labSel').onchange=e=>{const v=e.target.value;if(v==='직접')api.cfgSet({labelSel:'직접',label:$('#label').value});else api.cfgSet({labelSel:v,label:v})};
 const rts=()=>cfg.routines||RT_DEF;
 function renderRt(){

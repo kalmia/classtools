@@ -9,9 +9,8 @@
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Jua,"Malgun Gothic",sans-serif}
 .wrap{padding:16px 22px 30px;max-width:1240px;margin:0 auto}
-.cols{column-count:2;column-gap:16px}
-.cols>.card{break-inside:avoid}
-@media(max-width:900px){.cols{column-count:1}}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 16px;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:minmax(0,1fr)}}
 h1{font:400 26px Jua,sans-serif;margin:0 0 12px}
 h2{font:400 23px Jua,sans-serif;margin:-16px -16px 14px;padding:11px 16px;background:var(--soft);color:var(--c);border-bottom:2px solid var(--line);border-radius:16px 16px 0 0}
 h3{font:400 17px Jua,sans-serif;margin:10px 0 8px;color:var(--ink)}
@@ -45,6 +44,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
   <h1>타이머 설정</h1>
 
   <div class="cols">
+<div>
   <section class="card">
     <h2>⏱ 지금 타이머 <span class="hint" id="tst"></span></h2>
     <div class="row"><b id="tnow" style="font:400 40px/1 Jua,sans-serif;font-variant-numeric:tabular-nums">05:00</b></div>
@@ -53,7 +53,6 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
       <button class="b" id="tm">−1분</button><button class="b" id="tp">+1분</button><button class="b" id="tfull">크게 보기</button>
     </div>
   </section>
-
   <section class="card">
     <h2>🕒 시간 정하기 · 활동 이름</h2>
     <div class="row">
@@ -69,7 +68,6 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
     <div class="row" style="margin-top:10px"><button class="b" id="addPre">위에서 정한 시간을 목록에 추가</button></div>
     <p class="hint">타이머를 마우스 오른쪽 버튼으로 눌러도 이 목록이 나와요.</p>
   </section>
-
   <section class="card">
     <h2>🔔 미리 알림 · 소리</h2>
     <div class="chk" id="alerts"></div>
@@ -88,13 +86,13 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
       <select id="endRep" aria-label="끝 소리 반복"><option value="1">1번 반복</option><option value="2">2번 반복</option><option value="3">3번 반복</option><option value="4">4번 반복</option><option value="5">5번 반복</option></select> <button class="b" id="testEnd">들어 보기</button>
     </div>
   </section>
-
+</div>
+<div>
   <section class="card">
     <h2>🔁 루틴 (자동으로 켜져요)</h2>
     <div id="rtBox"></div>
     <p class="hint">정해 둔 시각 사이에 프로그램이 켜져 있으면 타이머가 저절로 시작하고, 끝나는 시각에 맞춰 끝나요. 하루에 한 번만 시작해요. 이미 직접 타이머를 돌리고 있으면 끝난 뒤에 시작해요.</p>
   </section>
-
   <section class="card">
     <h2>📅 예약 시작</h2>
     <div class="row"><input type="number" id="rm" min="1" max="180" value="5" aria-label="몇 분 뒤"> 분 뒤에 <button class="b" id="resIn">예약</button></div>
@@ -102,19 +100,14 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
     <div class="res" id="resBox" hidden><span id="resTxt"></span><button class="b" id="resCancel">예약 취소</button></div>
     <p class="hint">예약 시각이 되면 위에서 정한 시간으로 타이머가 저절로 시작돼요. 프로그램이 켜져 있어야 해요.</p>
   </section>
-
   <section class="card" id="monCard" hidden>
     <h2>🖥 모니터 (학생용 TV)</h2>
     <div class="row">학생용(TV) 모니터
       <select id="mon" aria-label="학생용 모니터"></select>
       <button class="b" id="ident">모니터 번호 보기</button>
     </div>
-    <div class="row">뽑기 화면(학생용) 높이
-      <select id="stageH" aria-label="뽑기 화면 높이"><option value="60">작게</option><option value="70">조금 작게</option><option value="78">보통</option><option value="92">크게</option></select>
-    </div>
     <p class="hint">타이머와 뽑기 무대는 학생용 모니터에만 나와요. 이 설정 창과 뽑기 조작 화면은 다른(선생님) 모니터에 떠요.</p>
   </section>
-
   <section class="card">
     <h2>🪟 화면과 창</h2>
     <div class="row">크게 볼 때 모양
@@ -132,12 +125,12 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
       <button class="b" id="quit">프로그램 종료</button>
     </div>
   </section>
-
   <section class="card">
     <h2>ℹ 버전</h2>
     <div class="row"><span id="ver">확인 중…</span><button class="b" id="chk">업데이트 확인</button><button class="b pri" id="rl" hidden>지금 다시 시작해서 적용</button></div>
     <p class="hint" id="verHint">프로그램을 켜면 자동으로 새 화면이 있는지 확인하고, 있으면 받아 둬요. 다시 시작하면 적용돼요.</p>
   </section>
+</div>
   </div>
 </div>
 
@@ -157,7 +150,7 @@ function render(){
   const ls=cfg.labelSel!=null?cfg.labelSel:(LABS.includes(cfg.label)?cfg.label:(cfg.label?'직접':''));
   $('#labSel').value=ls;$('#labRow').hidden=ls!=='직접';
   if(document.activeElement!==$('#label'))$('#label').value=ls==='직접'?(cfg.label||''):'';
-  renderRt();$('#stageH').value=String(cfg.stageH||78);$('#endHold').value=String(cfg.endHold==null?60:cfg.endHold);
+  renderRt();$('#endHold').value=String(cfg.endHold==null?60:cfg.endHold);
   $('#pre').innerHTML=cfg.pre.map((s,i)=>`<button class="b" data-s="${s}">${preLab(s)}<span class="x" data-del="${i}" role="button" aria-label="지우기">×</span></button>`).join('');
   $('#alerts').innerHTML=ALERTS.map(([s,l])=>`<label><input type="checkbox" value="${s}"${cfg.alerts.includes(s)?' checked':''}> ${l}</label>`).join('');
   $('#snd').checked=cfg.snd;$('#preS').value=cfg.preS||'ding';$('#preRep').value=cfg.preRep==null?3:cfg.preRep;$('#endRep').value=cfg.endRep==null?2:cfg.endRep;if(document.activeElement!==$('#vol'))$('#vol').value=cfg.vol==null?70:cfg.vol;$('#volv').textContent=($('#vol').value)+'%';$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
@@ -166,7 +159,6 @@ function render(){
 $('#set').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:true})};
 $('#setOnly').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:false})};
 $('#label').oninput=e=>api.cfgSet({label:e.target.value,labelSel:'직접'});
-$('#stageH').onchange=e=>api.cfgSet({stageH:+e.target.value});
 $('#endHold').onchange=e=>api.cfgSet({endHold:+e.target.value});
 $('#labSel').onchange=e=>{const v=e.target.value;if(v==='직접')api.cfgSet({labelSel:'직접',label:$('#label').value});else api.cfgSet({labelSel:v,label:v})};
 const rts=()=>cfg.routines||RT_DEF;

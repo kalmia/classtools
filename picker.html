@@ -146,7 +146,8 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
     <h2>학생 화면(TV) 무대</h2>
     <div id="cs">준비됨</div>
     <div class="hint" id="cs2">뽑기 버튼을 누르면 학생 화면에서 연출이 시작돼요. 이 창은 선생님 화면에만 보여요.</div>
-    <div class="row" style="margin-top:8px"><button class="ib" id="skipC" hidden>연출 건너뛰기 ▶▶</button></div>
+    <div class="row" style="margin-top:8px"><button class="ib" id="skipC" hidden>연출 건너뛰기 ▶▶</button>
+      <label class="tg" style="gap:8px">학생 화면(TV) 높이 <select id="stageH" aria-label="학생 화면 높이" style="min-height:42px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:16px;background:var(--bg);color:var(--ink)"><option value="60">작게</option><option value="70">조금 작게</option><option value="78">보통</option><option value="92">크게</option></select></label></div>
   </section>
 
   <div class="bar">
@@ -196,6 +197,7 @@ let st=Object.assign({mode:'num',n:25,names:'',ex:[],anim:'random',cnt:1,auto:tr
 let hist=LS.get('pk_hist',[]).filter(h=>Date.now()-h.t<DAY);
 const ROLE=(location.search.match(/role=(\w+)/)||[])[1]||'both';
 document.body.classList.add('r-'+ROLE);
+if(ROLE==='control'&&window.api){api.cfgGet().then(c=>{$('#stageH').value=String((c&&c.stageH)||78)});$('#stageH').onchange=e=>api.cfgSet({stageH:+e.target.value})}
 let wd=0;
 let busy=false,timers=[],skipFn=null,raf=0,cfRaf=0,fakeUsed=false;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

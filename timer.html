@@ -44,7 +44,25 @@ body.fs .sub{font-size:clamp(16px,2.6vh,26px);margin-top:1vh}
 #ctl{position:absolute;left:0;right:0;bottom:6px;display:flex;gap:5px;justify-content:center;flex-wrap:wrap;opacity:0;transition:opacity .2s;z-index:3;-webkit-app-region:no-drag}
 body.sm:hover #ctl,body.fs.act #ctl{opacity:1}
 body.sm:hover .sub{visibility:hidden}
-body.adjust #ctl{display:none}
+body.adjust #ctl,body.adjust #side,body.adjust #startBig{display:none}
+/* 뽑기·설정은 다른 버튼과 구분되도록 오른쪽 위에 따로 */
+#side{position:absolute;top:6px;right:8px;display:flex;gap:6px;opacity:0;transition:opacity .2s;z-index:4;-webkit-app-region:no-drag}
+body.sm:hover #side,body.fs.act #side{opacity:1}
+.sb{height:30px;border:0;border-radius:15px;font:400 14px Jua,sans-serif;cursor:pointer;box-shadow:0 1px 4px rgba(60,30,10,.25)}
+.sb.pk{padding:0 12px;background:#f2b705;color:#3b2200}
+.sb.pk:hover{background:#ffc928}
+.sb.gr{width:30px;background:#6b5a4d;color:#fff;font-size:17px;line-height:30px;padding:0}
+.sb.gr:hover{background:#4d3f35}
+body.fs .sb{height:clamp(36px,5.5vh,56px);font-size:clamp(16px,2.6vh,26px);border-radius:999px}
+body.fs .sb.gr{width:clamp(36px,5.5vh,56px);font-size:clamp(20px,3vh,32px)}
+body.fs #side{top:2.5vh;right:2.5vw;gap:12px}
+/* 처음 화면: 시간도 활동 이름도 보이지 않는 빈 타이머. 눌러서 시작 */
+#startBig{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:44px;padding:0 20px;border:0;border-radius:22px;background:var(--c);color:#fff;font:400 20px Jua,sans-serif;cursor:pointer;opacity:0;transition:opacity .2s;z-index:3;-webkit-app-region:no-drag;box-shadow:0 2px 8px rgba(60,30,10,.3)}
+body.blank #startBig{display:block}
+body.blank:hover #startBig{opacity:1}
+body.blank .mid,body.blank .ring,body.blank .water{visibility:hidden}
+body.blank #ctl .b{display:none}
+body.blank{cursor:pointer}
 .b{height:30px;padding:0 10px;border:1px solid #e3cfb6;border-radius:10px;background:#fff;color:#5b3a24;font:400 14px Jua,sans-serif;cursor:pointer;white-space:nowrap}
 .b:hover{background:#fff1dc}
 .b.pri{background:var(--c);border-color:var(--c);color:#fff}
@@ -84,9 +102,12 @@ body.done.sm .big{animation:pl 1.2s ease-in-out infinite}
     <button class="b fo" data-a="10">+10초</button>
     <button class="b" data-a="60">+1분</button>
     <button class="b" data-a="full" id="bf">크게</button>
-    <button class="b" data-a="picker">뽑기</button>
-    <button class="b" data-a="settings">설정</button>
   </div>
+  <div id="side">
+    <button class="sb pk" data-a="picker" title="발표자 뽑기">🎲 뽑기</button>
+    <button class="sb gr" data-a="settings" title="설정" aria-label="설정">⚙</button>
+  </div>
+  <button id="startBig" data-a="toggle">▶ 눌러서 시작</button>
   <div id="adj"><div>끌어서 칸에 맞추고,<br>오른쪽 아래 ◢를 끌어 크기를 맞춰요<br>(방향키로 1픽셀씩 이동)</div><button class="b" id="adone">완료</button><div id="grip"></div></div>
 </div>
 
@@ -98,7 +119,7 @@ const ALERT_NAMES={600:'10분',300:'5분',180:'3분',60:'1분',30:'30초',10:'10
 let cfg={set:300,view:'ring',alerts:[300,60,10],snd:true,vol:70,preS:'ding',preRep:3,endS:'bell',endRep:2,label:'',pre:[30,60,180,300,600,900]};
 const RT_DEF=[{id:'am',on:true,label:'아침 시간',days:[1,2,3,4,5],from:'',until:'08:55'},{id:'lunch',on:true,label:'점심 시간',days:[1,2,3,4,5],from:'12:10',until:'13:00'}];
 let mode={full:false,adjust:false};
-let total=300000,remain=300000,running=false,endAt=0,done=false,doneAt=0,resAt=0,lastSec=null,sig='';
+let blank=true,total=300000,remain=300000,running=false,endAt=0,done=false,doneAt=0,resAt=0,lastSec=null,sig='';
 
 /* ---- 소리 ---- */
 let ac,mg;
@@ -127,7 +148,7 @@ const kst=(d,sec)=>d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-d
 function fit(){document.body.style.zoom=B.classList.contains('sm')?Math.min(innerWidth/450,innerHeight/244):1}
 function color(){const s=remain/1000;return done||s<=10?'#e5484d':s<=60?'#f08c00':'#a65e2e'}
 function paint(){
-  B.classList.toggle('sm',!mode.full);B.classList.toggle('fs',mode.full);B.classList.toggle('adjust',mode.adjust);B.classList.toggle('done',done);
+  B.classList.toggle('sm',!mode.full);B.classList.toggle('fs',mode.full);B.classList.toggle('adjust',mode.adjust);B.classList.toggle('done',done);B.classList.toggle('blank',blank&&!running&&!done&&!resAt&&!mode.full&&!mode.adjust);
   B.classList.remove('v-ring','v-water','v-num');B.classList.add('v-'+(cfg.view||'ring'));
   document.documentElement.style.setProperty('--c',color());
   const f=total>0?Math.max(0,Math.min(1,remain/total)):0;
@@ -153,10 +174,10 @@ function sendState(){
 }
 
 /* ---- 동작 ---- */
-function start(){A();clearSnd();if(done||remain<=0){remain=total;done=false}running=true;endAt=Date.now()+remain;lastSec=Math.ceil(remain/1000);paint()}
+function start(){A();clearSnd();blank=false;if(done||remain<=0){remain=total;done=false}running=true;endAt=Date.now()+remain;lastSec=Math.ceil(remain/1000);paint()}
 function pause(){if(!running)return;remain=Math.max(0,endAt-Date.now());running=false;paint()}
-function reset(){clearSnd();running=false;done=false;total=cfg.set*1000;remain=total;paint()}
-function setTime(sec,go){sec=Math.max(1,Math.min(10800,sec|0));cfg.set=sec;api.cfgSet({set:sec});reset();if(go)start()}
+function reset(){clearSnd();blank=true;running=false;done=false;total=cfg.set*1000;remain=total;paint()}
+function setTime(sec,go){sec=Math.max(1,Math.min(10800,sec|0));cfg.set=sec;api.cfgSet({set:sec});reset();blank=false;if(go)start()}
 function adj(d){
   if(done){done=false;total=d>0?d*1000:total;remain=d>0?d*1000:0;if(d>0)start();return}
   if(running)remain=endAt-Date.now();
@@ -217,6 +238,9 @@ api.on('cfg',c=>{const keep=cfg.set;cfg=c;A();if(cfg.set!==keep&&!running&&!done
 api.on('mode',m=>{mode=m;paint()});
 
 /* ---- 화면 조작 ---- */
+$('#side').onclick=e=>{const a=e.target.dataset.a;if(a==='picker')api.open('picker');else if(a==='settings')api.open('settings')};
+$('#startBig').onclick=()=>{blank=false;start()};
+document.body.addEventListener('click',e=>{if(B.classList.contains('blank')&&!e.target.closest('#side,#ctl')){blank=false;start()}});
 $('#ctl').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
   if(a==='toggle')running?pause():start();else if(a==='reset')reset();
   else if(a==='full')api.cmd('full',!mode.full);else if(a==='picker')api.open('picker');else if(a==='settings')api.open('settings');

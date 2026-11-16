@@ -23,6 +23,7 @@ input[type=text]{flex:1 1 180px}
 .pre{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}
 .pre .b{position:relative}
 .pre .x{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;background:var(--mut);color:#fff;font-size:13px;line-height:22px;text-align:center}
+.rt{padding:6px 0;border-top:1px solid var(--line,#eadfce)}.rt:first-child{border-top:0}
 .chk{display:flex;flex-wrap:wrap;gap:2px 16px}
 .chk label,.tg{display:inline-flex;align-items:center;gap:6px;min-height:38px;cursor:pointer;font-size:15px}
 input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
@@ -55,7 +56,8 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
       <button class="b pri" id="set">이 시간으로 시작</button>
       <button class="b" id="setOnly">시간만 맞추기</button>
     </div>
-    <div class="row"><input type="text" id="label" placeholder="활동 이름 (예: 모둠 토의) — 타이머 위에 크게 표시돼요" maxlength="30"></div>
+    <div class="row"><select id="labSel" aria-label="활동 이름"><option value="">활동 이름: 없음</option><option>아침 시간</option><option>쉬는 시간</option><option>점심 시간</option><option value="직접">직접 입력</option></select></div>
+    <div class="row" id="labRow" hidden><input type="text" id="label" placeholder="활동 이름 (예: 모둠 토의) — 타이머 위에 크게 표시돼요" maxlength="30"></div>
     <h2 style="margin-top:6px">바로 시작 목록</h2>
     <div class="pre" id="pre"></div>
     <div class="row" style="margin-top:10px"><button class="b" id="addPre">위에서 정한 시간을 목록에 추가</button></div>
@@ -79,6 +81,12 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
       <select id="endS" aria-label="끝 소리"><option value="bell">끝 소리: 종소리</option><option value="chime">끝 소리: 차임</option><option value="soft">끝 소리: 부드럽게</option></select>
       <select id="endRep" aria-label="끝 소리 반복"><option value="1">1번 반복</option><option value="2">2번 반복</option><option value="3">3번 반복</option><option value="4">4번 반복</option><option value="5">5번 반복</option></select> <button class="b" id="testEnd">들어 보기</button>
     </div>
+  </section>
+
+  <section class="card">
+    <h2>루틴 (자동으로 켜져요)</h2>
+    <div id="rtBox"></div>
+    <p class="hint">정해 둔 시각 사이에 프로그램이 켜져 있으면 타이머가 저절로 시작하고, 끝나는 시각에 맞춰 끝나요. 하루에 한 번만 시작해요. 이미 직접 타이머를 돌리고 있으면 끝난 뒤에 시작해요.</p>
   </section>
 
   <section class="card">
@@ -125,6 +133,8 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
 {
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ALERTS=[[600,'10분 전'],[300,'5분 전'],[180,'3분 전'],[60,'1분 전'],[30,'30초 전'],[10,'10초 전']];
+const RT_DEF=[{id:'am',on:true,label:'아침 시간',days:[1,2,3,4,5],from:'',until:'08:55'},{id:'lunch',on:true,label:'점심 시간',days:[1,2,3,4,5],from:'12:10',until:'13:00'}];
+const LABS=['아침 시간','쉬는 시간','점심 시간'];
 let cfg={set:300,view:'ring',alerts:[],snd:true,vol:70,preS:'ding',preRep:3,endS:'bell',endRep:2,label:'',pre:[],onTop:true,autostart:false};
 const kst=d=>d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+'분 '+s%60+'초'};
@@ -132,7 +142,10 @@ const preLab=s=>s<60?s+'초':(s%60?Math.floor(s/60)+'분 '+s%60+'초':s/60+'분'
 const cur=()=>(+$('#mm').value||0)*60+(+$('#ss').value||0);
 function render(){
   if(document.activeElement!==$('#mm')&&document.activeElement!==$('#ss')){$('#mm').value=Math.floor(cfg.set/60);$('#ss').value=cfg.set%60}
-  if(document.activeElement!==$('#label'))$('#label').value=cfg.label||'';
+  const ls=cfg.labelSel!=null?cfg.labelSel:(LABS.includes(cfg.label)?cfg.label:(cfg.label?'직접':''));
+  $('#labSel').value=ls;$('#labRow').hidden=ls!=='직접';
+  if(document.activeElement!==$('#label'))$('#label').value=ls==='직접'?(cfg.label||''):'';
+  renderRt();
   $('#pre').innerHTML=cfg.pre.map((s,i)=>`<button class="b" data-s="${s}">${preLab(s)}<span class="x" data-del="${i}" role="button" aria-label="지우기">×</span></button>`).join('');
   $('#alerts').innerHTML=ALERTS.map(([s,l])=>`<label><input type="checkbox" value="${s}"${cfg.alerts.includes(s)?' checked':''}> ${l}</label>`).join('');
   $('#snd').checked=cfg.snd;$('#preS').value=cfg.preS||'ding';$('#preRep').value=cfg.preRep==null?3:cfg.preRep;$('#endRep').value=cfg.endRep==null?2:cfg.endRep;if(document.activeElement!==$('#vol'))$('#vol').value=cfg.vol==null?70:cfg.vol;$('#volv').textContent=($('#vol').value)+'%';$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
@@ -140,7 +153,14 @@ function render(){
 }
 $('#set').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:true})};
 $('#setOnly').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:false})};
-$('#label').oninput=e=>api.cfgSet({label:e.target.value});
+$('#label').oninput=e=>api.cfgSet({label:e.target.value,labelSel:'직접'});
+$('#labSel').onchange=e=>{const v=e.target.value;if(v==='직접')api.cfgSet({labelSel:'직접',label:$('#label').value});else api.cfgSet({labelSel:v,label:v})};
+const rts=()=>cfg.routines||RT_DEF;
+function renderRt(){
+  if($('#rtBox').contains(document.activeElement)&&document.activeElement.tagName==='INPUT'&&document.activeElement.type==='time')return;
+  $('#rtBox').innerHTML=rts().map((r,i)=>`<div class="rt"><label class="tg"><input type="checkbox" data-i="${i}" data-k="on"${r.on?' checked':''}> <b>${r.label}</b> · 평일(월~금)</label>
+  <div class="row">${r.from===''?'<span>컴퓨터를 켜면 바로 시작해서</span>':`<input type="time" data-i="${i}" data-k="from" value="${r.from}"> <span>부터 시작해서</span>`} <input type="time" data-i="${i}" data-k="until" value="${r.until}"> <span>에 끝나요</span></div></div>`).join('')}
+$('#rtBox').onchange=e=>{const i=+e.target.dataset.i,k=e.target.dataset.k;if(k===undefined)return;const a=rts().map(x=>({...x}));a[i][k]=k==='on'?e.target.checked:e.target.value;api.cfgSet({routines:a})};
 $('#pre').onclick=e=>{const d=e.target.dataset.del;if(d!==undefined){e.stopPropagation();const p=[...cfg.pre];p.splice(+d,1);api.cfgSet({pre:p});return}const b=e.target.closest('[data-s]');if(b)api.cmd('set',{sec:+b.dataset.s,go:true})};
 $('#addPre').onclick=()=>{const s=cur();if(s>0&&!cfg.pre.includes(s))api.cfgSet({pre:[...cfg.pre,s].sort((a,b)=>a-b)})};
 $('#alerts').onchange=()=>api.cfgSet({alerts:$$('#alerts input:checked').map(i=>+i.value)});

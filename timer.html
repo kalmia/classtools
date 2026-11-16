@@ -96,6 +96,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const B=document.body;
 const ALERT_NAMES={600:'10분',300:'5분',180:'3분',60:'1분',30:'30초',10:'10초'};
 let cfg={set:300,view:'ring',alerts:[300,60,10],snd:true,vol:70,preS:'ding',preRep:3,endS:'bell',endRep:2,label:'',pre:[30,60,180,300,600,900]};
+const RT_DEF=[{id:'am',on:true,label:'아침 시간',days:[1,2,3,4,5],from:'',until:'08:55'},{id:'lunch',on:true,label:'점심 시간',days:[1,2,3,4,5],from:'12:10',until:'13:00'}];
 let mode={full:false,adjust:false};
 let total=300000,remain=300000,running=false,endAt=0,done=false,doneAt=0,resAt=0,lastSec=null,sig='';
 
@@ -164,7 +165,24 @@ function adj(d){
   paint();
 }
 function finish(){running=false;done=true;doneAt=Date.now();remain=0;endSound();paint()}
-function loop(){
+/* ---- 루틴: 정해 둔 시각에 자동으로 타이머를 켜요 (한국 시간 기준) ---- */
+const hm=s=>{const m=/^(\d{1,2}):(\d{2})$/.exec(s||'');return m?+m[1]*60+ +m[2]:null};
+let rtDone={};
+function routineTick(){
+  if(running||resAt||mode.adjust)return;
+  const k=new Date(Date.now()+(540+new Date().getTimezoneOffset())*60000);
+  const day=k.getDay(),mins=k.getHours()*60+k.getMinutes()+k.getSeconds()/60,dk=k.getFullYear()+'-'+k.getMonth()+'-'+k.getDate();
+  for(const r of (cfg.routines||RT_DEF)){
+    if(!r.on||rtDone[r.id]===dk||!(r.days||[1,2,3,4,5]).includes(day))continue;
+    const u=hm(r.until),f=r.from?hm(r.from):0;
+    if(u==null||f==null||mins<f||mins>=u)continue;
+    rtDone[r.id]=dk;
+    const now=Date.now(),endMs=now+(u-mins)*60000,startMs=r.from?now-(mins-f)*60000:now;
+    clearSnd();total=endMs-startMs;remain=endMs-now;done=false;running=true;endAt=endMs;lastSec=Math.ceil(remain/1000);
+    api.cfgSet({label:r.label,labelSel:r.label});paint();break;
+  }
+}
+function loop(){routineTick();
   const now=Date.now();
   if(resAt&&now>=resAt){resAt=0;preSound();reset();start()}
   if(running){

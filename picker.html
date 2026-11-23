@@ -89,6 +89,7 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
 .chip{min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:400 17px Jua,sans-serif;cursor:pointer;padding:0 6px}
 .chip.off{opacity:.38;text-decoration:line-through;background:transparent}
 .hint{color:var(--mut);font-size:14px;margin:6px 0 0}
+.stmv{display:inline-flex;gap:4px}
 .hist{list-style:none;margin:0;padding:0;max-height:360px;overflow:auto}
 .hist li{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
 .hist time{color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:14px;padding-top:2px}
@@ -148,6 +149,11 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
     <div class="hint" id="cs2">뽑기 버튼을 누르면 학생 화면에서 연출이 시작돼요. 이 창은 선생님 화면에만 보여요.</div>
     <div class="row" style="margin-top:8px"><button class="ib" id="skipC" hidden>연출 건너뛰기 ▶▶</button>
       <label class="tg" style="gap:8px">학생 화면(TV) 높이 <select id="stageH" aria-label="학생 화면 높이" style="min-height:42px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:16px;background:var(--bg);color:var(--ink)"><option value="60">작게</option><option value="70">조금 작게</option><option value="78">보통</option><option value="92">크게</option></select></label></div>
+    <div class="row" style="margin-top:4px" id="stBox"><button class="ib" id="stHide">🙈 학생 화면 숨기기</button>
+      <button class="ib" id="stMinus">－ 작게</button><button class="ib" id="stPlus">＋ 크게</button>
+      <span class="stmv"><button class="ib" data-d="-1,0" aria-label="왼쪽으로">◀</button><button class="ib" data-d="0,-1" aria-label="위로">▲</button><button class="ib" data-d="0,1" aria-label="아래로">▼</button><button class="ib" data-d="1,0" aria-label="오른쪽으로">▶</button></span>
+      <button class="ib" id="stReset">처음 위치·크기</button></div>
+    <div class="hint">숨겨도 뽑기 버튼을 누르면 학생 화면이 다시 올라와요. 단축키 Ctrl+Alt+H로도 숨기기/보이기를 할 수 있어요.</div>
   </section>
 
   <div class="bar">
@@ -197,7 +203,7 @@ let st=Object.assign({mode:'num',n:25,names:'',ex:[],anim:'random',cnt:1,auto:tr
 let hist=LS.get('pk_hist',[]).filter(h=>Date.now()-h.t<DAY);
 const ROLE=(location.search.match(/role=(\w+)/)||[])[1]||'both';
 document.body.classList.add('r-'+ROLE);
-if(ROLE==='control'&&window.api){api.cfgGet().then(c=>{$('#stageH').value=String((c&&c.stageH)||78)});$('#stageH').onchange=e=>api.cfgSet({stageH:+e.target.value})}
+if(ROLE==='control'&&window.api){api.on('cfg',c=>{$('#stageH').value=String((c&&c.stageH)||78)});api.cfgGet().then(c=>{$('#stageH').value=String((c&&c.stageH)||78)});$('#stageH').onchange=e=>api.cfgSet({stageH:+e.target.value})}
 let wd=0;
 let busy=false,timers=[],skipFn=null,raf=0,cfRaf=0,fakeUsed=false;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -450,6 +456,18 @@ if(ROLE==='control'){
   }});
 }
 }
+
+/* 학생 화면(TV) 숨기기·크기·위치 */
+(function(){if(!window.api||!api.cmd)return;
+  let hid=false;const h=document.getElementById('stHide');
+  api.on('stagevis',s=>{hid=!!s.hidden;h.textContent=hid?'👀 학생 화면 보이기':'🙈 학생 화면 숨기기'});
+  h.onclick=()=>api.cmd('stageHide',!hid);
+  document.getElementById('stMinus').onclick=()=>api.cmd('stageSize',-1);
+  document.getElementById('stPlus').onclick=()=>api.cmd('stageSize',1);
+  document.getElementById('stReset').onclick=()=>api.cmd('stageReset');
+  document.querySelectorAll('#stBox .stmv button').forEach(b=>b.onclick=()=>{const d=b.dataset.d.split(',').map(Number);api.cmd('stageMove',{dx:d[0],dy:d[1]})});
+  api.cmd('stageReq');
+})();
 </script>
 </body>
 </html>

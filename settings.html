@@ -36,6 +36,7 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
 .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
 .res{margin-top:4px;padding:10px 12px;border-radius:12px;background:var(--soft);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .hint{color:var(--mut);font-size:14px;margin:4px 0 0}
+.stmv{display:inline-flex;gap:4px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -107,6 +108,14 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--c)}
       <button class="b" id="ident">모니터 번호 보기</button>
     </div>
     <p class="hint">타이머와 뽑기 무대는 학생용 모니터에만 나와요. 이 설정 창과 뽑기 조작 화면은 다른(선생님) 모니터에 떠요.</p>
+  </section>
+  <section class="card" id="stCard" hidden>
+    <h2>🎬 학생용 뽑기 화면</h2>
+    <div class="row" id="sgBox"><button class="b" id="sgHide">🙈 학생 화면 숨기기</button>
+      <button class="b" id="sgMinus">－ 작게</button><button class="b" id="sgPlus">＋ 크게</button>
+      <span class="stmv"><button class="b" data-d="-1,0" aria-label="왼쪽으로">◀</button><button class="b" data-d="0,-1" aria-label="위로">▲</button><button class="b" data-d="0,1" aria-label="아래로">▼</button><button class="b" data-d="1,0" aria-label="오른쪽으로">▶</button></span>
+      <button class="b" id="sgReset">처음 위치·크기</button></div>
+    <p class="hint">수업 중에 뽑기 화면을 잠깐 내렸다 올릴 수 있어요. 숨겨도 뽑기를 시작하면 다시 올라와요. 단축키 Ctrl+Alt+H도 같은 기능이에요.</p>
   </section>
   <section class="card">
     <h2>🪟 화면과 창</h2>
@@ -201,8 +210,8 @@ $('#tm').onclick=()=>api.cmd('adj',-60);$('#tp').onclick=()=>api.cmd('adj',60);$
 api.on('mode',m=>{tfull=!!m.full;$('#tfull').textContent=tfull?'작게 보기':'크게 보기'});
 api.cmd('stateReq');
 /* 모니터 */
-function mons(){if(!api.displays)return;api.displays().then(d=>{if(!d||!d.list||d.list.length<2){$('#monCard').hidden=true;return}
-  $('#monCard').hidden=false;
+function mons(){if(!api.displays)return;api.displays().then(d=>{if(!d||!d.list||d.list.length<2){$('#monCard').hidden=true;$('#stCard').hidden=true;return}
+  $('#monCard').hidden=false;$('#stCard').hidden=false;
   $('#mon').innerHTML=`<option value="auto">자동 (보조 모니터)</option>`+d.list.map(x=>`<option value="${x.id}">모니터 ${x.n} (${x.w}×${x.h}${x.primary?', 주 모니터':''})</option>`).join('');
   $('#mon').value=d.auto?'auto':String(d.student)})}
 $('#mon').onchange=e=>{api.cfgSet({studentDisplay:e.target.value==='auto'?null:+e.target.value}).then(mons)};
@@ -212,6 +221,18 @@ function ver(){api.ver().then(v=>{$('#ver').textContent=`화면 v${v.web} · 프
 $('#chk').onclick=()=>api.cmd('checkUpdate');$('#rl').onclick=()=>api.cmd('relaunch');
 api.on('update',()=>ver());ver();
 }
+
+/* 학생 화면(TV) 숨기기·크기·위치 */
+(function(){if(!window.api||!api.cmd)return;
+  let hid=false;const h=document.getElementById('sgHide');
+  api.on('stagevis',s=>{hid=!!s.hidden;h.textContent=hid?'👀 학생 화면 보이기':'🙈 학생 화면 숨기기'});
+  h.onclick=()=>api.cmd('stageHide',!hid);
+  document.getElementById('sgMinus').onclick=()=>api.cmd('stageSize',-1);
+  document.getElementById('sgPlus').onclick=()=>api.cmd('stageSize',1);
+  document.getElementById('sgReset').onclick=()=>api.cmd('stageReset');
+  document.querySelectorAll('#sgBox .stmv button').forEach(b=>b.onclick=()=>{const d=b.dataset.d.split(',').map(Number);api.cmd('stageMove',{dx:d[0],dy:d[1]})});
+  api.cmd('stageReq');
+})();
 </script>
 </body>
 </html>

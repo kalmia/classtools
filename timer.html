@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="fonts/outfit/500.css">
 <link rel="stylesheet" href="fonts/outfit/700.css">
 <style>
-/* 작은 모드: 배경화면 '타이머' 칸 안에 숫자만 조용히. 전체화면: 큰 링/물높이/숫자 */
+/* 작은 모드: 배경화면 '타이머' 칸 안에 숫자만 조용히. 전체화면: 링/물높이/숫자/달리기/로켓 */
 :root{--c:#a65e2e;--ink:#2b211b;--mut:#8a5a34;--soft:rgba(166,94,46,.18)}
 *{box-sizing:border-box;min-width:0}
 html,body{margin:0;height:100%;overflow:hidden;background:transparent;font:16px/1.4 Jua,"Malgun Gothic",sans-serif;color:var(--ink);user-select:none;cursor:default}
@@ -80,6 +80,64 @@ body.adjust #adj{display:flex}
 body.done .big{color:#e5484d}
 body.done.sm .big{animation:pl 1.2s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.big.pulse,body.done.sm .big{animation:none}}
+/* ---- 달리기 모드: 친구가 결승선까지 달려가요 ---- */
+.race,.rocket,#fx{display:none}
+body.fs.v-race .race,body.fs.v-rocket .rocket{display:block}
+body.fs #fx{display:block}
+.race{position:absolute;left:5vw;right:5vw;bottom:13vh;height:24vh}
+.rtrack{position:absolute;left:0;right:0;bottom:0;height:7vh;border-radius:4vh;background:repeating-linear-gradient(90deg,#e9d3b6 0 4vw,#f1e1cb 4vw 8vw);box-shadow:inset 0 -6px 0 rgba(120,70,30,.12)}
+.rdone{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:4vh;background:color-mix(in srgb,var(--c) 55%,#fff);transition:width .25s linear,background .6s}
+.rmark{position:absolute;bottom:8vh;transform:translateX(-50%);font:400 clamp(14px,2.2vh,22px) Jua,sans-serif;color:var(--mut)}
+.rmark::after{content:"";display:block;width:3px;height:2.2vh;margin:2px auto 0;background:#d4b896;border-radius:2px}
+.flag{position:absolute;right:-1.5vw;bottom:5vh;font-size:12vh;line-height:1;transform-origin:20% 100%}
+.runner{position:absolute;bottom:4vh;left:0;width:15vh;height:17vh;transform:translateX(-10%);transition:left .25s linear}
+.runner svg{width:100%;height:100%;overflow:visible}
+.runner .bd{transform-box:fill-box;transform-origin:50% 90%}
+.runner .lg{transform-box:fill-box;transform-origin:50% 0}
+body.run .runner .bd{animation:bob .45s ease-in-out infinite}
+body.run .runner .l1{animation:leg .45s ease-in-out infinite}
+body.run .runner .l2{animation:leg .45s ease-in-out infinite reverse}
+body.run.hurry .runner .bd,body.run.hurry .runner .lg{animation-duration:.22s}
+body.run.hurry .runner .sweat{opacity:1}
+.runner .sweat{opacity:0;transition:opacity .3s}
+body.done .runner .bd{animation:jump .7s ease-in-out infinite}
+body.done .flag{animation:wave .6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6%) rotate(4deg)}}
+@keyframes leg{0%,100%{transform:rotate(28deg)}50%{transform:rotate(-28deg)}}
+@keyframes jump{0%,100%{transform:translateY(0)}40%{transform:translateY(-35%) rotate(-8deg)}}
+@keyframes wave{50%{transform:rotate(-12deg)}}
+body.fs.v-race .mid{transform:translateY(-16vh)}
+body.fs.v-race .big{font-size:clamp(60px,min(20vw,27vh),300px)}
+/* ---- 로켓 모드: 로켓이 달까지 날아가요 ---- */
+body.fs.v-rocket{background:radial-gradient(ellipse at 70% 0%,#2c3a78 0%,#141a3d 55%,#0b0f26 100%)}
+body.fs.v-rocket .lbl,body.fs.v-rocket .big{color:#fff}
+body.fs.v-rocket .big.low{color:var(--c)}
+body.fs.v-rocket .sub{color:#c9d2ff}
+body.fs.v-rocket .mid{align-self:flex-start;width:62%}
+body.fs.v-rocket .big{font-size:clamp(60px,min(17vw,30vh),300px)}
+.rocket{position:absolute;inset:0}
+.star{position:absolute;width:4px;height:4px;border-radius:50%;background:#fff;opacity:.7;animation:tw 2.4s ease-in-out infinite}
+@keyframes tw{50%{opacity:.15}}
+.moon{position:absolute;right:9vw;top:3vh;width:19vh;height:19vh;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fffbe0,#f4e19a 60%,#d9c26c);box-shadow:0 0 6vh rgba(255,240,170,.45)}
+.moon i{position:absolute;border-radius:50%;background:rgba(190,160,70,.35)}
+.earth{position:absolute;right:3vw;bottom:-22vh;width:44vh;height:34vh;border-radius:50%;background:radial-gradient(circle at 40% 30%,#6fd3ff,#2e8bd8 55%,#1d5fa8);overflow:hidden}
+.earth::before,.earth::after{content:"";position:absolute;border-radius:45%;background:#5cc463}
+.earth::before{width:40%;height:30%;left:14%;top:12%}.earth::after{width:28%;height:22%;right:16%;top:30%}
+.ship{position:absolute;right:calc(9vw + 3.5vh);bottom:9vh;width:12vh;height:22vh;transition:bottom .25s linear}
+.ship svg{width:100%;height:100%;overflow:visible}
+.ship .fl{transform-box:fill-box;transform-origin:50% 0;opacity:0}
+body.run .ship .fl{opacity:1;animation:fire .15s ease-in-out infinite alternate}
+body.run.hurry .ship{animation:shake .12s linear infinite}
+body.done .ship{animation:float 1.6s ease-in-out infinite}
+@keyframes fire{to{transform:scaleY(1.35) scaleX(.85)}}
+@keyframes shake{25%{translate:-3px 0}75%{translate:3px 0}}
+@keyframes float{50%{translate:0 -2vh}}
+.trail{position:absolute;right:calc(9vw + 9.5vh - 2px);bottom:9vh;width:4px;height:0;border-radius:4px;background:linear-gradient(to top,rgba(255,255,255,0),rgba(255,255,255,.45));transition:height .25s linear}
+/* ---- 끝났을 때 색종이 ---- */
+#fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+.cf{position:absolute;top:-4vh;width:1.4vh;height:2.2vh;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media(prefers-reduced-motion:reduce){.runner *,.flag,.ship,.ship *,.star,.cf{animation:none!important}}
 </style>
 </head>
 <body class="sm v-ring">
@@ -87,6 +145,37 @@ body.done.sm .big{animation:pl 1.2s ease-in-out infinite}
   <div id="stage">
     <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="fg" cx="100" cy="100" r="90" stroke-dasharray="565.49" stroke-dashoffset="0"/></svg>
     <div class="water" id="water"></div>
+    <div class="race" aria-hidden="true">
+      <div class="rtrack"><div class="rdone" id="rdone"></div></div>
+      <div class="rmark" style="left:25%">¼</div><div class="rmark" style="left:50%">반</div><div class="rmark" style="left:75%">¾</div>
+      <div class="flag">🏁</div>
+      <div class="runner" id="runner"><svg viewBox="0 0 100 115">
+        <g class="lg l1"><line x1="42" y1="78" x2="42" y2="108" stroke="#5b3a24" stroke-width="7" stroke-linecap="round"/></g>
+        <g class="lg l2"><line x1="58" y1="78" x2="58" y2="108" stroke="#5b3a24" stroke-width="7" stroke-linecap="round"/></g>
+        <g class="bd">
+          <ellipse cx="50" cy="52" rx="36" ry="34" fill="#ffb340" stroke="#c97a12" stroke-width="3"/>
+          <circle cx="62" cy="44" r="6" fill="#2b211b"/><circle cx="64" cy="42" r="2" fill="#fff"/>
+          <circle cx="40" cy="44" r="6" fill="#2b211b"/><circle cx="42" cy="42" r="2" fill="#fff"/>
+          <path d="M44 60 Q52 68 62 60" stroke="#2b211b" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="72" cy="56" rx="6" ry="4" fill="#ff7d7d" opacity=".6"/><ellipse cx="30" cy="56" rx="6" ry="4" fill="#ff7d7d" opacity=".6"/>
+          <path class="sweat" d="M20 26 q-5 8 0 11 q5 -3 0 -11z" fill="#6cc4ff"/>
+          <path d="M14 40 l-12 -4 M14 50 l-14 0 M14 60 l-12 4" stroke="#c97a12" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+        </g></svg></div>
+    </div>
+    <div class="rocket" id="rocket" aria-hidden="true">
+      <div class="moon"><i style="width:22%;height:22%;left:22%;top:30%"></i><i style="width:14%;height:14%;left:58%;top:22%"></i><i style="width:18%;height:18%;left:52%;top:60%"></i></div>
+      <div class="earth"></div>
+      <div class="trail" id="trail"></div>
+      <div class="ship" id="ship"><svg viewBox="0 0 60 110">
+        <path class="fl" d="M20 86 Q30 118 40 86 Z" fill="#ffb02e"/><path class="fl" d="M25 86 Q30 104 35 86 Z" fill="#fff3a0"/>
+        <path d="M14 62 L2 84 L16 80 Z M46 62 L58 84 L44 80 Z" fill="#e5484d"/>
+        <path d="M30 2 C48 18 50 50 46 84 L14 84 C10 50 12 18 30 2 Z" fill="#f4f6ff" stroke="#9aa6d6" stroke-width="2"/>
+        <path d="M30 2 C38 9 42 16 44 24 L16 24 C18 16 22 9 30 2 Z" fill="#e5484d"/>
+        <circle cx="30" cy="44" r="9" fill="#6cc4ff" stroke="#9aa6d6" stroke-width="3"/>
+        <rect x="26" y="78" width="8" height="12" rx="2" fill="#9aa6d6"/>
+      </svg></div>
+    </div>
+    <div id="fx"></div>
     <div class="mid">
       <div class="lbl" id="lbl"></div>
       <div class="big" id="big">05:00</div>
@@ -149,10 +238,12 @@ function fit(){document.body.style.zoom=B.classList.contains('sm')?Math.min(inne
 function color(){const s=remain/1000;return done||s<=10?'#e5484d':s<=60?'#f08c00':'#a65e2e'}
 function paint(){
   B.classList.toggle('sm',!mode.full);B.classList.toggle('fs',mode.full);B.classList.toggle('adjust',mode.adjust);B.classList.toggle('done',done);B.classList.toggle('blank',blank&&!running&&!done&&!resAt&&!mode.full&&!mode.adjust);
-  B.classList.remove('v-ring','v-water','v-num');B.classList.add('v-'+(cfg.view||'ring'));
+  B.classList.remove('v-ring','v-water','v-num','v-race','v-rocket');B.classList.toggle('run',running);B.classList.toggle('hurry',running&&remain<=10000);B.classList.add('v-'+(cfg.view||'ring'));
   document.documentElement.style.setProperty('--c',color());
   const f=total>0?Math.max(0,Math.min(1,remain/total)):0;
   $('#fg').style.strokeDashoffset=565.49*(1-f);$('#water').style.height=(f*100)+'%';$('#bar').style.width=(f*100)+'%';
+  const g=1-f;$('#rdone').style.width=(g*100)+'%';$('#runner').style.left=`calc(${g*100}% - ${g*24}vh)`;
+  $('#ship').style.bottom=`calc(9vh + ${g} * (100vh - 9vh - 22vh - 14vh))`;$('#trail').style.height=`calc(${g} * (100vh - 9vh - 22vh - 14vh) + 2vh)`;
   const big=$('#big');
   big.textContent=done?'끝!':fmt(remain);
   big.className='big'+(remain<=60000||done?' low':'')+(running&&remain<=10000?' pulse':'');
@@ -176,7 +267,7 @@ function sendState(){
 /* ---- 동작 ---- */
 function start(){A();clearSnd();blank=false;if(done||remain<=0){remain=total;done=false}running=true;endAt=Date.now()+remain;lastSec=Math.ceil(remain/1000);paint()}
 function pause(){if(!running)return;remain=Math.max(0,endAt-Date.now());running=false;paint()}
-function reset(){clearSnd();blank=true;running=false;done=false;total=cfg.set*1000;remain=total;paint()}
+function reset(){clearSnd();$('#fx').innerHTML='';blank=true;running=false;done=false;total=cfg.set*1000;remain=total;paint()}
 function setTime(sec,go){sec=Math.max(1,Math.min(10800,sec|0));cfg.set=sec;api.cfgSet({set:sec});reset();blank=false;if(go)start()}
 function adj(d){
   if(done){done=false;total=d>0?d*1000:total;remain=d>0?d*1000:0;if(d>0)start();return}
@@ -185,7 +276,15 @@ function adj(d){
   if(running){endAt=Date.now()+remain;lastSec=Math.ceil(remain/1000)}
   paint();
 }
-function finish(){running=false;done=true;doneAt=Date.now();remain=0;endSound();paint()}
+function finish(){running=false;done=true;doneAt=Date.now();remain=0;endSound();paint();party()}
+/* 끝나면 색종이 (달리기·로켓 모양에서) */
+function party(){if(!mode.full||!['race','rocket'].includes(cfg.view)||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const fx=$('#fx'),cols=['#e5484d','#f2b705','#2eb872','#3a86ff','#ff7ab6','#a66cff'];fx.innerHTML='';
+  for(let i=0;i<90;i++){const d=document.createElement('i');d.className='cf';d.style.left=Math.random()*100+'vw';d.style.background=cols[i%cols.length];
+    d.style.animationDuration=(2.2+Math.random()*2.2)+'s';d.style.animationDelay=(Math.random()*1.2)+'s';fx.appendChild(d)}
+  setTimeout(()=>{fx.innerHTML=''},6000)}
+{const r=$('#rocket');for(let i=0;i<60;i++){const st=document.createElement('i');st.className='star';const z=1+Math.random()*3;
+  st.style.cssText=`left:${Math.random()*100}vw;top:${Math.random()*92}vh;width:${z}px;height:${z}px;animation-delay:${Math.random()*2.4}s`;r.prepend(st)}}
 /* ---- 루틴: 정해 둔 시각에 자동으로 타이머를 켜요 (한국 시간 기준) ---- */
 const hm=s=>{const m=/^(\d{1,2}):(\d{2})$/.exec(s||'');return m?+m[1]*60+ +m[2]:null};
 let rtDone={};

@@ -153,9 +153,12 @@ let cfg={set:300,view:'ring',alerts:[],snd:true,vol:70,preS:'ding',preRep:3,endS
 const kst=d=>d.toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'});
 const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+'분 '+s%60+'초'};
 const preLab=s=>s<60?s+'초':(s%60?Math.floor(s/60)+'분 '+s%60+'초':s/60+'분');
+let timeDirty=false,lastSet=null;
 const cur=()=>(+$('#mm').value||0)*60+(+$('#ss').value||0);
 function render(){
-  if(document.activeElement!==$('#mm')&&document.activeElement!==$('#ss')){$('#mm').value=Math.floor(cfg.set/60);$('#ss').value=cfg.set%60}
+  /* 입력해 둔 시간(아직 '시작' 안 누른 값)은 활동 이름을 골라도 지워지지 않게 지킨다. 타이머 쪽 값이 실제로 바뀐 경우에만 덮어쓴다 */
+  if(cfg.set!==lastSet){lastSet=cfg.set;timeDirty=false}
+  if(!timeDirty&&document.activeElement!==$('#mm')&&document.activeElement!==$('#ss')){$('#mm').value=Math.floor(cfg.set/60);$('#ss').value=cfg.set%60}
   const ls=cfg.labelSel!=null?cfg.labelSel:(LABS.includes(cfg.label)?cfg.label:(cfg.label?'직접':''));
   $('#labSel').value=ls;$('#labRow').hidden=ls!=='직접';
   if(document.activeElement!==$('#label'))$('#label').value=ls==='직접'?(cfg.label||''):'';
@@ -165,8 +168,9 @@ function render(){
   $('#snd').checked=cfg.snd;$('#preS').value=cfg.preS||'ding';$('#preRep').value=cfg.preRep==null?3:cfg.preRep;$('#endRep').value=cfg.endRep==null?2:cfg.endRep;if(document.activeElement!==$('#vol'))$('#vol').value=cfg.vol==null?70:cfg.vol;$('#volv').textContent=($('#vol').value)+'%';$('#endS').value=cfg.endS;$('#onTop').checked=cfg.onTop;$('#autostart').checked=!!cfg.autostart;
   $$('#view button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===cfg.view));
 }
-$('#set').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:true})};
-$('#setOnly').onclick=()=>{const s=cur();if(s>0)api.cmd('set',{sec:s,go:false})};
+$('#mm').addEventListener('input',()=>{timeDirty=true});$('#ss').addEventListener('input',()=>{timeDirty=true});
+$('#set').onclick=()=>{const s=cur();if(s>0){timeDirty=false;api.cmd('set',{sec:s,go:true})}};
+$('#setOnly').onclick=()=>{const s=cur();if(s>0){timeDirty=false;api.cmd('set',{sec:s,go:false})}};
 $('#label').oninput=e=>api.cfgSet({label:e.target.value,labelSel:'직접'});
 $('#endHold').onchange=e=>api.cfgSet({endHold:+e.target.value});
 $('#labSel').onchange=e=>{const v=e.target.value;if(v==='직접')api.cfgSet({labelSel:'직접',label:$('#label').value});else api.cfgSet({labelSel:v,label:v})};
@@ -176,7 +180,7 @@ function renderRt(){
   $('#rtBox').innerHTML=rts().map((r,i)=>`<div class="rt"><label class="tg"><input type="checkbox" data-i="${i}" data-k="on"${r.on?' checked':''}> <b>${r.label}</b> · 평일(월~금)</label>
   <div class="row">${r.from===''?'<span>컴퓨터를 켜면 바로 시작해서</span>':`<input type="time" data-i="${i}" data-k="from" value="${r.from}"> <span>부터 시작해서</span>`} <input type="time" data-i="${i}" data-k="until" value="${r.until}"> <span>에 끝나요</span></div></div>`).join('')}
 $('#rtBox').onchange=e=>{const i=+e.target.dataset.i,k=e.target.dataset.k;if(k===undefined)return;const a=rts().map(x=>({...x}));a[i][k]=k==='on'?e.target.checked:e.target.value;api.cfgSet({routines:a})};
-$('#pre').onclick=e=>{const d=e.target.dataset.del;if(d!==undefined){e.stopPropagation();const p=[...cfg.pre];p.splice(+d,1);api.cfgSet({pre:p});return}const b=e.target.closest('[data-s]');if(b)api.cmd('set',{sec:+b.dataset.s,go:true})};
+$('#pre').onclick=e=>{const d=e.target.dataset.del;if(d!==undefined){e.stopPropagation();const p=[...cfg.pre];p.splice(+d,1);api.cfgSet({pre:p});return}const b=e.target.closest('[data-s]');if(b){timeDirty=false;api.cmd('set',{sec:+b.dataset.s,go:true})}};
 $('#addPre').onclick=()=>{const s=cur();if(s>0&&!cfg.pre.includes(s))api.cfgSet({pre:[...cfg.pre,s].sort((a,b)=>a-b)})};
 $('#alerts').onchange=()=>api.cfgSet({alerts:$$('#alerts input:checked').map(i=>+i.value)});
 $('#snd').onchange=e=>api.cfgSet({snd:e.target.checked});
